@@ -174,5 +174,3 @@ The model is free for a limited time while it's in Zen's free tier. Data sent du
 ## Credits
 
 Inspired by and largely built on [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy) (MIT) — a beautifully small image-to-text toolkit (glance / ground / trace). This repo adapts it to OpenCode Zen's free tier, adds Windows pitfall fixes, and packages it as a single self-contained script.
-
-Built with DeepSeek, inspired by [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy).

@@ -174,5 +174,3 @@ Windows PowerShell 的 `Set-Content -Encoding UTF8` 会写 BOM，普通读法会
 ## 致谢
 
 思路与核心代码大量参考 [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy)（MIT）——一个精炼的"图转文字"工具包（glance / ground / trace）。本仓库把它适配到 OpenCode Zen 的免费档，补上 Windows 的排雷，并打包成单文件自包含脚本。
-
-灵感来自 [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy)，用 DeepSeek 构建。
