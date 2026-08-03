@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
-"""看图工具：描述 / 问答 / OCR。
+"""看图工具：描述 / 问答 / OCR（多源自动切换）。
 用法: python vision.py img.png [-q 问题] [--ocr]
-配置: 同目录 .env 填 VISION_API_KEY / VISION_BASE_URL / VISION_MODEL"""
+配置: 同目录 .env 填主源 VISION_* 三行；可选备用源 FALLBACK_* 三行，
+主源失败/限流/超时自动切备用源，全部失败才报错。
+例:
+  VISION_API_KEY=zen的key
+  VISION_BASE_URL=https://opencode.ai/zen/v1
+  VISION_MODEL=mimo-v2.5-free
+  FALLBACK_API_KEY=智谱的key
+  FALLBACK_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+  FALLBACK_MODEL=glm-4.6v-flash"""
 import argparse
 import base64
 import mimetypes
@@ -39,14 +47,14 @@ def data_url(path):
     return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode()
 
 
-def ask(urls, prompt):
-    key = os.environ.get("VISION_API_KEY", "").strip()
-    base = os.environ.get("VISION_BASE_URL", "").strip().rstrip("/")
-    model = os.environ.get("VISION_MODEL", "").strip()
-    if not (key and base and model):
-        sys.exit("缺少配置：请在 .env 填 VISION_API_KEY / VISION_BASE_URL / VISION_MODEL")
-    if os.environ.get("LANG", "zh").strip().lower() == "zh":
-        prompt = f"请使用简体中文回答。\n\n{prompt}"
+def _provider(prefix):
+    key = os.environ.get(prefix + "API_KEY", "").strip()
+    base = os.environ.get(prefix + "BASE_URL", "").strip().rstrip("/")
+    model = os.environ.get(prefix + "MODEL", "").strip()
+    return (key, base, model) if key and base and model else None
+
+
+def _call(key, base, model, urls, prompt):
     payload = {
         "model": model,
         "messages": [{
@@ -55,29 +63,50 @@ def ask(urls, prompt):
                        [{"type": "image_url", "image_url": {"url": u}} for u in urls],
         }],
     }
-    try:
-        for attempt in range(3):
+    last = ""
+    for attempt in range(3):
+        try:
             r = requests.post(base + "/chat/completions", json=payload,
                               headers={"Authorization": "Bearer " + key}, timeout=180)
             if r.status_code in {429, 500, 502, 503, 504} and attempt < 2:
                 time.sleep(2 ** attempt)
                 continue
             r.raise_for_status()
+            data = r.json()
+        except (requests.RequestException, ValueError) as e:
+            last = f"请求失败：{e}"
+            continue
+        try:
+            text = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            last = "返回格式异常（模型可能不支持图片输入）"
             break
-        data = r.json()
-    except (requests.RequestException, ValueError) as e:
-        detail = getattr(e, "response", None)
-        body = ""
-        if detail is not None:
-            body = detail.text[:300].replace("\n", " ")
-        sys.exit(f"请求失败：{e}" + (f" | {body}" if body else ""))
-    try:
-        text = data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError):
-        sys.exit("返回格式异常：请确认 VISION_MODEL 是支持图片的多模态模型（如 mimo-v2.5-free）")
-    if isinstance(text, list):
-        text = "".join(part.get("text", "") for part in text if isinstance(part, dict))
-    return text.strip()
+        if isinstance(text, list):
+            text = "".join(part.get("text", "") for part in text if isinstance(part, dict))
+        text = text.strip()
+        if not text:
+            last = "返回空内容"
+            continue
+        return text
+    raise RuntimeError(last or "重试次数用尽")
+
+
+def ask(urls, prompt):
+    if os.environ.get("LANG", "zh").strip().lower() == "zh":
+        prompt = f"请使用简体中文回答。\n\n{prompt}"
+    primary = _provider("VISION_")
+    fallback = _provider("FALLBACK_")
+    if not primary:
+        sys.exit("缺少配置：请在 .env 填 VISION_API_KEY / VISION_BASE_URL / VISION_MODEL")
+    errors = []
+    for name, cfg in (("主源", primary), ("备用源", fallback)):
+        if not cfg:
+            continue
+        try:
+            return _call(*cfg, urls, prompt)
+        except RuntimeError as e:
+            errors.append(f"[{name}] {e}")
+    sys.exit("；".join(errors))
 
 
 def main():
