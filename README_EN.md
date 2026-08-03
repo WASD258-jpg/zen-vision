@@ -8,7 +8,11 @@ English | [中文](README.md)
 
 ## What is this
 
-DeepSeek is powerful but blind — it can't see pasted screenshots, every `view_image` call is rejected. This project lets text-only models "see": an image is sent to a free multimodal model (OpenCode Zen `mimo-v2.5-free`), converted into a text description, and handed to DeepSeek for reasoning. No model swap, no cost, no third-party downloads.
+DeepSeek is powerful but blind — it can't see pasted screenshots, every `view_image` call is rejected, and error dialogs have to be read to it by hand.
+
+![Pain point: a text-only model cannot see the pasted screenshot](photo/01-pain-point.png)
+
+This project lets text-only models "see": an image is sent to a free multimodal model (OpenCode Zen `mimo-v2.5-free`), converted into a text description, and handed to DeepSeek for reasoning. **No model swap, no cost, nothing to download.**
 
 The core idea in one line: **translation = screenshot + vision model + text description + DeepSeek** (aka *Describe-then-Reason*).
 
@@ -29,17 +33,22 @@ The core idea in one line: **translation = screenshot + vision model + text desc
 - Transcribe an error dialog verbatim: `python vision.py image.png --ocr`
 - Compare multiple images: `python vision.py a.png b.png`
 - Switch vision model at runtime: `python vision.py /vision-model zhipu`
-- Let DeepSeek inside opencode / Claude Code / Codex see images (MCP)
+- Let DeepSeek inside opencode / Claude Code / Codex see images (see MCP section below)
+
+A vision Q&A round trip — the model describes what it sees, then identifies the subject:
+
+![Vision Q&A example](photo/05-identify-role.png)
 
 ## Quick start
 
 On Windows double-click `setup.bat`, or run `python setup.py` on any platform:
 
-1. Paste your primary API key (in opencode, `/connect` → OpenCode Zen, free)
-2. (Optional) Paste a fallback key (Zhipu `glm-4.1v-thinking-flash`, free)
-3. Done — `python vision.py image.png` just works
+1. **Paste your primary API key**: in opencode run `/connect`, pick OpenCode Zen, copy the key from the opened page
 
-![Pain point: a text-only model cannot see the pasted screenshot](photo/01-pain-point.png)
+   ![OpenCode Zen API key page](photo/04-zen-api-key.png)
+
+2. **(Optional) Add a fallback**: paste a Zhipu key (`glm-4.1v-thinking-flash`, free) — auto-switches if the primary fails
+3. **Done**: `python vision.py image.png` just works
 
 ## Configuration
 
@@ -66,6 +75,10 @@ FALLBACK_MODEL=glm-4.1v-thinking-flash
 LANG=zh
 ```
 
+![The .env file](photo/03-env-config.png)
+
+> Save it with any text editor — the script handles Windows encoding quirks automatically.
+
 ### Adding a model source
 
 Want a third or fourth vision source? Copy three lines, incrementing the number:
@@ -80,39 +93,63 @@ Rules: name them `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`,
 
 ## MCP integration (let agents see images)
 
-`mcp_server.py` exposes `vision.py` as three tools: `describe_image`, `ocr_image`, `set_vision_model`. Install and wire it into your agent:
+MCP is a protocol that lets agents call external tools. This project's `mcp_server.py` provides three tools:
+
+| Tool | Purpose | Example |
+|---|---|---|
+| `describe_image` | Describe / answer questions about an image | Let DeepSeek analyze a screenshot |
+| `ocr_image` | Transcribe visible text verbatim | Read an error dialog |
+| `set_vision_model` | Switch the vision model | Use Zhipu, or back to auto |
+
+**Step 1 — install the dependency:**
 
 ```powershell
 pip install "mcp>=1.0,<2"
 ```
 
-**opencode** — edit `~/.config/opencode/opencode.jsonc`, add to the `mcp` node:
+**Step 2 — wire it into your agent** (pick one)
 
-```jsonc
-"vision": {
-  "type": "local",
-  "command": ["python", "E:\\path\\to\\mcp_server.py"],
-  "environment": { "CODEX_VISION_PROXY_ENV": "E:\\path\\to\\.env" },
-  "enabled": true
-}
-```
+**opencode:**
+1. Find the config file `~/.config/opencode/opencode.jsonc` (on Windows: `C:\Users\YOUR-USERNAME\.config\opencode\opencode.jsonc`)
+2. Open it in a text editor, add inside the `"mcp": { ... }` braces:
 
-**Claude Code** — one command (`-s user` = global):
+   ```jsonc
+   "vision": {
+     "type": "local",
+     "command": ["python", "YOUR-ABSOLUTE-PATH\\mcp_server.py"],
+     "environment": { "CODEX_VISION_PROXY_ENV": "YOUR-ABSOLUTE-PATH\\.env" },
+     "enabled": true
+   }
+   ```
+
+   Replace `YOUR-ABSOLUTE-PATH` with the full folder path containing `mcp_server.py` (e.g. `D:\tools\zen-vision`)
+3. Save, then **fully quit and reopen opencode**
+4. Verify: run `opencode mcp list` — you should see `vision connected`
+
+**Claude Code:** run one command (replace the path):
 
 ```powershell
-claude mcp add vision -s user -e "CODEX_VISION_PROXY_ENV=E:\path\to\.env" -- python E:\path\to\mcp_server.py
+claude mcp add vision -s user -e "CODEX_VISION_PROXY_ENV=YOUR-ABSOLUTE-PATH\.env" -- python YOUR-ABSOLUTE-PATH\mcp_server.py
 ```
 
-**Codex CLI** — edit `~/.codex/config.toml`, append:
+After restarting, `claude mcp list` should show `vision ... Connected`.
 
-```toml
-[mcp_servers.vision]
-command = "python"
-args = ["E:\\path\\to\\mcp_server.py"]
-env = { CODEX_VISION_PROXY_ENV = "E:\\path\\to\\.env" }
-```
+**Codex CLI:**
+1. Edit `~/.codex/config.toml`
+2. Append at the end:
 
-**Restart the agent** after wiring, then just say "look at this image `E:\xxx\shot.png`" — DeepSeek will call the tools automatically.
+   ```toml
+   [mcp_servers.vision]
+   command = "python"
+   args = ["YOUR-ABSOLUTE-PATH\\mcp_server.py"]
+   env = { CODEX_VISION_PROXY_ENV = "YOUR-ABSOLUTE-PATH\\.env" }
+   ```
+
+3. Restart Codex
+
+**Step 3 — use it.** Once wired up, just say: "look at this image `YOUR-IMAGE-PATH\shot.png`" — the agent calls the tool automatically.
+
+> Back up config files before editing. All paths above are placeholders — replace them with your own.
 
 ## How it works
 
@@ -149,7 +186,13 @@ The image never reaches DeepSeek. A vision model describes it, and the descripti
 | `.env.example` | Configuration template |
 | `photo/` | Screenshots used in this README |
 
-FAQ: **Why `requests` and not `urllib`?** `urllib`'s TLS fingerprint gets flagged by Cloudflare in front of OpenCode Zen (403, error code 1010); `requests` passes. **Why read `.env` with `utf-8-sig`?** Windows PowerShell writes a BOM, which would silently break key matching; `utf-8-sig` strips it.
+FAQ:
+
+**Why `requests` and not `urllib`?** `urllib`'s TLS fingerprint gets flagged by Cloudflare in front of OpenCode Zen (403, error code 1010); `requests` passes.
+
+**Why read `.env` with `utf-8-sig`?** Windows PowerShell writes a BOM, which would silently break key matching; `utf-8-sig` strips it.
+
+**Which free Zen models can see images?** Only `mimo-v2.5-free` accepts image input; the other free models reject images with HTTP 400.
 
 ## Credits
 
