@@ -47,6 +47,7 @@ Learn more
 ## 亮点
 
 - **免费**：用 OpenCode Zen 的 `mimo-v2.5-free`（小米 MiMo-V2.5 多模态旗舰）——Zen 免费档里**唯一**真正能收图的模型（6 个免费模型全部实测过，其余 5 个收图直接 HTTP 400）。
+- **多源容灾**：主源失败/限流/超时自动切换备用源（智谱免费视觉模型），一个源挂了视觉不瘫。
 - **单文件**：`vision.py`，唯一依赖是 `requests`。不用 clone、不用编译、不用跑服务。
 - **三种模式**：描述、提问（`-q`）、OCR（`--ocr`）。
 - **BOM 免疫**：`.env` 用 `utf-8-sig` 读取，Windows 记事本 / PowerShell 随便存都不会读不到 key。
@@ -76,15 +77,21 @@ python vision.py a.png b.png                       # 一次对比多张图
 
 | 变量 | 必填 | 说明 |
 |---|---|---|
-| `VISION_API_KEY` | 是 | 你的 OpenCode Zen API key |
+| `VISION_API_KEY` | 是 | 主源 API key（OpenCode Zen） |
 | `VISION_BASE_URL` | 否（有默认） | `https://opencode.ai/zen/v1` |
-| `VISION_MODEL` | 是 | `mimo-v2.5-free`（免费多模态模型） |
+| `VISION_MODEL` | 是 | 主源模型 `mimo-v2.5-free` |
+| `FALLBACK_API_KEY` | 否 | 备用源 API key（智谱，免费） |
+| `FALLBACK_BASE_URL` | 否 | `https://open.bigmodel.cn/api/paas/v4` |
+| `FALLBACK_MODEL` | 否 | 备用源模型 `glm-4.1v-thinking-flash`（免费） |
 | `LANG` | 否 | `zh`（中文）或 `en`（英文），默认中文 |
 
 ```
 VISION_API_KEY=oc-...
 VISION_BASE_URL=https://opencode.ai/zen/v1
 VISION_MODEL=mimo-v2.5-free
+FALLBACK_API_KEY=你的智谱key
+FALLBACK_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+FALLBACK_MODEL=glm-4.1v-thinking-flash
 LANG=zh
 ```
 
@@ -151,6 +158,9 @@ Windows PowerShell 的 `Set-Content -Encoding UTF8` 会写 BOM，普通读法会
 
 **能换别的视觉 API 吗？**
 能——任何支持 `image_url` 的 OpenAI 兼容端点都行（[GLM-4V](https://open.bigmodel.cn/)、[Kimi](https://platform.moonshot.cn/)、[qwen-vl](https://help.aliyun.com/zh/model-studio/)、[Gemini](https://ai.google.dev/)……），改 `.env` 三行即可。
+
+**主源挂了怎么办？**
+自动切换备用源（`.env` 里配了 `FALLBACK_*` 三行后）。实测：主源 401/限流/超时 → 自动用智谱 `glm-4.1v-thinking-flash`（免费）接管；两源都挂才会报错，错误信息会标明哪个源失败。
 
 **真的免费吗？**
 模型在 Zen 免费档期间免费（限时）。免费期间发送的数据可能被用于模型改进——别发敏感内容。

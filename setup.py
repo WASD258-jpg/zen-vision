@@ -33,16 +33,24 @@ def ensure_env():
     if ENV_FILE.exists():
         print("已检测到 .env，跳过配置。")
         return
-    key = input("粘贴你的 OpenCode Zen API key（没有就去 opencode 里 /connect 选 OpenCode Zen 拿，免费的）: ").strip()
+    key = input("粘贴你的主源 API key（OpenCode Zen 的，去 opencode 里 /connect 选 OpenCode Zen 拿，免费）: ").strip()
     if not key:
         sys.exit("key 不能为空，本次配置取消（已安装的依赖不受影响）")
-    ENV_FILE.write_text(
-        f"VISION_API_KEY={key}\n"
-        "VISION_BASE_URL=https://opencode.ai/zen/v1\n"
-        "VISION_MODEL=mimo-v2.5-free\n"
-        "LANG=zh\n",
-        encoding="utf-8",
-    )
+    lines = [
+        f"VISION_API_KEY={key}",
+        "VISION_BASE_URL=https://opencode.ai/zen/v1",
+        "VISION_MODEL=mimo-v2.5-free",
+    ]
+    if ask("要不要配一个备用源（主源挂了自动切换，防单点故障）？", default="n"):
+        fkey = input("备用源 API key（智谱 GLM-4.6V-Flash 免费，去 bigmodel.cn 注册拿）: ").strip()
+        if fkey:
+            lines += [
+                f"FALLBACK_API_KEY={fkey}",
+                "FALLBACK_BASE_URL=https://open.bigmodel.cn/api/paas/v4",
+                "FALLBACK_MODEL=glm-4.6v-flash",
+            ]
+    lines.append("LANG=zh")
+    ENV_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("已生成 .env（此文件不会上传到 GitHub）")
 
 

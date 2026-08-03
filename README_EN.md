@@ -47,6 +47,7 @@ Learn more
 ## Highlights
 
 - **Free**: uses OpenCode Zen's `mimo-v2.5-free` (Xiaomi MiMo-V2.5, multimodal flagship) — the *only* free model on Zen that actually accepts images (all 6 free models were tested; the other 5 reject images with HTTP 400).
+- **Multi-source failover**: if the primary source fails / rate-limits / times out, it automatically switches to a fallback source (Zhipu free vision model) — one source dying won't blind your setup.
 - **Single file**: `vision.py` — the only dependency is `requests`. No clone, no build, no service to run.
 - **Three modes**: describe, ask (`-q`), OCR (`--ocr`).
 - **BOM-proof**: `.env` is read with `utf-8-sig`, so Windows Notepad / PowerShell writes just work.
@@ -72,19 +73,25 @@ python vision.py a.png b.png                     # compare multiple images in on
 
 ## Configuration
 
-Create a `.env` file next to `vision.py` with exactly three lines:
+Create a `.env` file next to `vision.py` with these lines (fallback is optional):
 
 | Variable | Required | Description |
 |---|---|---|
-| `VISION_API_KEY` | Yes | Your OpenCode Zen API key |
+| `VISION_API_KEY` | Yes | Primary API key (OpenCode Zen) |
 | `VISION_BASE_URL` | No (default) | `https://opencode.ai/zen/v1` |
-| `VISION_MODEL` | Yes | `mimo-v2.5-free` (the free multimodal model) |
+| `VISION_MODEL` | Yes | Primary model `mimo-v2.5-free` |
+| `FALLBACK_API_KEY` | No | Fallback API key (Zhipu, free) |
+| `FALLBACK_BASE_URL` | No | `https://open.bigmodel.cn/api/paas/v4` |
+| `FALLBACK_MODEL` | No | Fallback model `glm-4.1v-thinking-flash` (free) |
 | `LANG` | No | `zh` (Chinese) or `en` (English); defaults to Chinese |
 
 ```
 VISION_API_KEY=oc-...
 VISION_BASE_URL=https://opencode.ai/zen/v1
 VISION_MODEL=mimo-v2.5-free
+FALLBACK_API_KEY=your-zhipu-key
+FALLBACK_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+FALLBACK_MODEL=glm-4.1v-thinking-flash
 LANG=zh
 ```
 
