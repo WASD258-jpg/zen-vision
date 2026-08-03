@@ -15,7 +15,10 @@ mcp = FastMCP(
     "vision",
     instructions=(
         "Tools that give the model vision by converting images into text "
-        "descriptions or verbatim OCR via a multimodal API."
+        "descriptions or verbatim OCR via a multimodal API. "
+        "Use describe_image / ocr_image to look at images; use "
+        "set_vision_model to switch between vision sources "
+        "(zen = OpenCode Zen default, zhipu/glm = Zhipu fallback, auto = auto-failover)."
     ),
 )
 
@@ -36,6 +39,22 @@ def ocr_image(path: str) -> str:
     path: absolute path to a local image (PNG/JPEG/GIF/WebP)."""
     try:
         return vision.ask([vision.data_url(path)], vision.OCR_PROMPT)
+    except BaseException as exc:
+        return f"error: {exc}"
+
+
+@mcp.tool()
+def set_vision_model(model: str = "") -> str:
+    """Query or switch the vision model source.
+    model: 'zen' (OpenCode Zen, default) / 'zhipu' or 'glm' (Zhipu fallback) /
+           'auto' (auto-failover: primary -> fallback). Empty = query current."""
+    try:
+        if not model:
+            return f"当前视觉模型: {vision.current_mode()}"
+        if model not in ("auto", "zen", "zhipu", "glm"):
+            return f"未知模型: {model}，可用: auto / zen / zhipu / glm"
+        vision.set_mode(model)
+        return f"视觉模型已切换为: {model}"
     except BaseException as exc:
         return f"error: {exc}"
 
