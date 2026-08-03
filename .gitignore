@@ -10,3 +10,5 @@ __pycache__/
 test_*.py
 *.log
 *.bak
+
+.vision-model
