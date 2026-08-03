@@ -104,6 +104,25 @@ LANG=zh
 
 ![.env 文件，就三行](photo/03-env-config.png)
 
+### 新增模型源（格式要求）
+
+想加第三个、第四个视觉源？在 `.env` 里照抄三行，**编号递增**：
+
+```dotenv
+VISION3_API_KEY=你的key
+VISION3_BASE_URL=https://你的端点/v1
+VISION3_MODEL=你的模型ID
+```
+
+规则：
+
+| 项 | 要求 |
+|---|---|
+| 命名 | `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`，N 从 **3** 开始递增（3、4、5…） |
+| 端点 | OpenAI 兼容的 `/chat/completions`，支持 `image_url` 图片输入 |
+| 生效 | 填了自动进 fallback 链（zen → zhipu → v3 → v4 → …），主源挂了按序切换 |
+| 切换 | `python vision.py /vision-model v3` 强制用该源，`/vision-model auto` 恢复自动 |
+
 **怎么拿 key**：在 [opencode](https://opencode.ai) 里执行 `/connect`，选 **OpenCode Zen**，浏览器打开的页面里复制 API key。key 存在本机 `.local/share/opencode/auth.json`。
 
 ![OpenCode Zen API 密钥页面](photo/04-zen-api-key.png)
