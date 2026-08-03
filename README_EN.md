@@ -1,81 +1,49 @@
 # zen-vision
 
-Give text-only models (DeepSeek and friends) real eyes using **OpenCode Zen's free multimodal model** 鈥?a single-file script, zero downloads, zero cost.
+Give text-only models (DeepSeek and friends) real eyes using **free multimodal models** — a single-file script, zero downloads, zero cost.
 
-[涓枃](README.md) | English
+English | [中文](README.md)
 
-If your DeepSeek is powerful but blind 鈥?it can't see the screenshots you paste, every `view_image` call is rejected, and debugging from a picture is impossible 鈥?this repository is for you. Instead of switching to an expensive multimodal model, it routes images through a **free vision model** (`mimo-v2.5-free` on OpenCode Zen) and hands your text-only model a **text description**. Your existing DeepSeek setup stays untouched.
+![Running: vision.py describing a webpage screenshot](photo/02-run-example.png)
+
+## What is this
+
+DeepSeek is powerful but blind — it can't see pasted screenshots, every `view_image` call is rejected. This project lets text-only models "see": an image is sent to a free multimodal model (OpenCode Zen `mimo-v2.5-free`), converted into a text description, and handed to DeepSeek for reasoning. No model swap, no cost, no third-party downloads.
+
+The core idea in one line: **translation = screenshot + vision model + text description + DeepSeek** (aka *Describe-then-Reason*).
+
+## Features
+
+- **Multi-source failover**: primary OpenCode Zen, fallback Zhipu (free), auto-switch on failure; extend with `VISION3_*`/`VISION4_*`... in `.env`
+- **Single file**: `vision.py`, the only dependency is `requests`. No build, no service.
+- **Three modes**: describe, ask (`-q`), verbatim OCR (`--ocr`)
+- **Runtime model switch**: `/vision-model` command (zen / zhipu / glm / v3 / v4... / auto)
+- **MCP integration**: `describe_image` / `ocr_image` / `set_vision_model` tools for opencode, Claude Code, Codex
+- **One-click setup**: `setup.py` / `setup.bat`
+- **Hardened**: BOM-proof `.env` loading; `requests` instead of `urllib` to pass Cloudflare
+
+## What you can do with it
+
+- Look at a screenshot: `python vision.py image.png`
+- Ask about an image: `python vision.py image.png -q "dominant color?"`
+- Transcribe an error dialog verbatim: `python vision.py image.png --ocr`
+- Compare multiple images: `python vision.py a.png b.png`
+- Switch vision model at runtime: `python vision.py /vision-model zhipu`
+- Let DeepSeek inside opencode / Claude Code / Codex see images (MCP)
+
+## Quick start
+
+On Windows double-click `setup.bat`, or run `python setup.py` on any platform:
+
+1. Paste your primary API key (in opencode, `/connect` → OpenCode Zen, free)
+2. (Optional) Paste a fallback key (Zhipu `glm-4.1v-thinking-flash`, free)
+3. Done — `python vision.py image.png` just works
 
 ![Pain point: a text-only model cannot see the pasted screenshot](photo/01-pain-point.png)
 
-No third-party files to download, no proxy to run, no MCP required to get started: one `.py` file + one `.env` with three lines.
-
-## Quick Start (one-click)
-
-Don't want to read the rest? Run the setup script:
-
-- **Windows**: double-click `setup.bat`
-- **Any OS**: `python setup.py`
-
-It checks your Python, installs dependencies (`requests`, optional MCP), walks you through pasting your free Zen API key, generates `.env`, tests one image, and optionally wires up MCP for opencode / Claude Code / Codex. After it finishes:
-
-```powershell
-python vision.py your-image.png
-```
-
-## Real-world Effects
-
-`vision.py screenshot.png` against a plain webpage:
-
-> The page has a light background. A bold black heading at the top-left reads **"Example Domain"**, followed by a paragraph of small black text 鈥?"This domain is for use in documentation examples without needing permission. Avoid use in operations." 鈥?and a blue clickable **"Learn more"** link at the bottom.
-
-![Running vision.py](photo/02-run-example.png)
-
-A vision Q&A round trip 鈥?the model describes what it sees, then identifies the subject:
-
-![Vision Q&A example](photo/05-identify-role.png)
-
-`--ocr` transcribes it verbatim:
-
-```
-Example Domain
-This domain is for use in documentation examples without needing
-permission. Avoid use in operations.
-Learn more
-```
-
-## Highlights
-
-- **Free**: uses OpenCode Zen's `mimo-v2.5-free` (Xiaomi MiMo-V2.5, multimodal flagship) 鈥?the *only* free model on Zen that actually accepts images (all 6 free models were tested; the other 5 reject images with HTTP 400).
-- **Multi-source failover**: if the primary source fails / rate-limits / times out, it automatically switches to a fallback source (Zhipu free vision model) 鈥?one source dying won't blind your setup.
-- **Single file**: `vision.py` 鈥?the only dependency is `requests`. No clone, no build, no service to run.
-- **Three modes**: describe, ask (`-q`), OCR (`--ocr`).
-- **BOM-proof**: `.env` is read with `utf-8-sig`, so Windows Notepad / PowerShell writes just work.
-- **Cloudflare-proof**: uses `requests` instead of `urllib` 鈥?`urllib`'s TLS fingerprint gets flagged by Zen's Cloudflare (403, error code 1010); `requests` passes.
-- **Optional MCP server**: wrap it as a FastMCP server (`describe_image` / `ocr_image`) and plug DeepSeek into opencode, Claude Code, or Codex for a near-multimodal experience.
-
-## Usage
-
-```powershell
-pip install requests
-
-python vision.py screenshot.png                  # describe the image
-python vision.py screenshot.png -q "dominant color?"   # ask a question
-python vision.py screenshot.png --ocr            # verbatim text transcription
-python vision.py a.png b.png                     # compare multiple images in one call
-python vision.py /vision-model list              # list all configured models
-python vision.py /vision-model v3                # switch model (zen/zhipu/glm/v3/v4.../auto)
-```
-
-## Prerequisites
-
-- Python 3.11+ (tested on 3.13)
-- An OpenCode Zen API key (free; see below)
-- `requests` (single pip install)
-
 ## Configuration
 
-Create a `.env` file next to `vision.py` with these lines (fallback is optional):
+Create a `.env` file next to `vision.py`. The three primary lines are required; everything else is optional:
 
 | Variable | Required | Description |
 |---|---|---|
@@ -84,29 +52,23 @@ Create a `.env` file next to `vision.py` with these lines (fallback is optional)
 | `VISION_MODEL` | Yes | Primary model `mimo-v2.5-free` |
 | `FALLBACK_API_KEY` | No | Fallback API key (Zhipu, free) |
 | `FALLBACK_BASE_URL` | No | `https://open.bigmodel.cn/api/paas/v4` |
-| `FALLBACK_MODEL` | No | Fallback model `glm-4.1v-thinking-flash` (free) |
-| `VISION3_API_KEY` etc. | No | More fallback sources (optional; add `VISION4_*`...) |
+| `FALLBACK_MODEL` | No | Fallback model `glm-4.1v-thinking-flash` |
+| `VISION3_API_KEY` etc. | No | More fallback sources (optional) |
 | `LANG` | No | `zh` (Chinese) or `en` (English); defaults to Chinese |
 
-```
+```dotenv
 VISION_API_KEY=oc-...
 VISION_BASE_URL=https://opencode.ai/zen/v1
 VISION_MODEL=mimo-v2.5-free
 FALLBACK_API_KEY=your-zhipu-key
 FALLBACK_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 FALLBACK_MODEL=glm-4.1v-thinking-flash
-# Add more fallbacks? Copy the three lines as VISION3_ / VISION4_ ... and they join the failover chain.
-# VISION3_API_KEY=
-# VISION3_BASE_URL=
-# VISION3_MODEL=
 LANG=zh
 ```
 
-![The .env file, three lines](photo/03-env-config.png)
+### Adding a model source
 
-### Adding a Model Source (format)
-
-Want a third or fourth vision source? Copy these three lines in `.env`, **incrementing the number**:
+Want a third or fourth vision source? Copy three lines, incrementing the number:
 
 ```dotenv
 VISION3_API_KEY=your-key
@@ -114,103 +76,60 @@ VISION3_BASE_URL=https://your-endpoint/v1
 VISION3_MODEL=your-model-id
 ```
 
-Rules:
+Rules: name them `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`, N starting at 3; the endpoint must be OpenAI-compatible and accept `image_url`; once filled they join the failover chain (zen → zhipu → v3 → v4 → ...); force one with `/vision-model v3`.
 
-| Item | Requirement |
-|---|---|
-| Naming | `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`, N starts at **3** (3, 4, 5...) |
-| Endpoint | OpenAI-compatible `/chat/completions`, must accept `image_url` image input |
-| Effect | Once filled, it joins the failover chain (zen 鈫?zhipu 鈫?v3 鈫?v4 鈫?...), used in order when the primary fails |
-| Switching | `python vision.py /vision-model v3` to force it; `/vision-model auto` to restore auto |
-
-**Getting the key**: run `/connect` inside opencode, pick **OpenCode Zen**, and copy the API key from the opened browser page. It's stored locally in `.local/share/opencode/auth.json`.
-
-![OpenCode Zen API key page](photo/04-zen-api-key.png)
-
-## Optional: MCP Server (Multi-Agent)
-
-`mcp_server.py` exposes the same engine as `describe_image(path, query?)` and `ocr_image(path)` via FastMCP (stdio). Wire it into any MCP client:
-
-- **opencode** 鈥?add to `opencode.jsonc`:
-  ```jsonc
-  "vision": {
-    "type": "local",
-    "command": ["python", "E:\\path\\to\\mcp_server.py"],
-    "environment": { "CODEX_VISION_PROXY_ENV": "E:\\path\\to\\.env" },
-    "enabled": true
-  }
-  ```
-- **Claude Code**:
-  ```powershell
-  claude mcp add vision -s user -e "CODEX_VISION_PROXY_ENV=E:\path\to\.env" -- python E:\path\to\mcp_server.py
-  ```
-- **Codex CLI** 鈥?append to `~/.codex/config.toml`:
-  ```toml
-  [mcp_servers.vision]
-  command = "python"
-  args = ["E:\\path\\to\\mcp_server.py"]
-  env = { CODEX_VISION_PROXY_ENV = "E:\\path\\to\\.env" }
-  ```
-
-## How It Works
+## How it works
 
 ```
 Your text-only model (DeepSeek)
-        鈹? asks to "see" an image
-        鈻?vision.py / mcp_server.py
-        鈹? image -> base64 data URL
-        鈻?OpenCode Zen API  https://opencode.ai/zen/v1/chat/completions
-        鈹? model: mimo-v2.5-free (multimodal)
-        鈻?text description / verbatim OCR
-        鈻?DeepSeek (text-only) 鈫?now it "sees"
+        │  asks to "see" an image
+        ▼
+vision.py / mcp_server.py
+        │  image -> base64 data URL
+        ▼
+Vision API (multi-source: zen → zhipu → v3 → ...)
+        │  model describes the image
+        ▼
+text description / verbatim OCR
+        ▼
+DeepSeek (text-only) → now it "sees"
 ```
 
-The image never reaches DeepSeek. A vision model describes it, and the description is what your text-only model reasons over 鈥?*Describe-then-Reason* (Prism, NeurIPS 2024).
+The image never reaches DeepSeek. A vision model describes it, and the description is what your text-only model reasons over — *Describe-then-Reason* ([Prism](https://arxiv.org/abs/2406.14544), NeurIPS 2024).
 
-## FAQ
+## Security
 
-**Why `requests` and not `urllib`?**
-Because `urllib`'s TLS fingerprint is flagged by Cloudflare in front of OpenCode Zen 鈫?`403 error code: 1010`. `requests` passes. Don't "simplify" it back.
+- `.env` (API keys) and the `.vision-model` state file are gitignored — never committed
+- Free models may collect data during the free period — don't send passwords or sensitive screenshots
+- Free tiers are time-limited; if a source goes away, the failover chain takes over, or change the `.env` endpoint
 
-**Why does `.env` load with `utf-8-sig`?**
-Windows PowerShell `Set-Content -Encoding UTF8` writes a BOM; a plain read turns `VISION_API_KEY` into `\ufeffVISION_API_KEY` and the key silently fails to match. `utf-8-sig` strips it.
-
-**Which free Zen models can see images?**
-Only `mimo-v2.5-free`. Tested on 2026-08: `deepseek-v4-flash-free`, `ling-3.0-flash-free`, `nemotron-3-ultra-free`, `north-mini-code-free`, `laguna-s-2.1-free` all reject image input (HTTP 400).
-
-**Can I use another vision API?**
-Yes 鈥?any OpenAI-compatible endpoint supporting `image_url` works (GLM-4V, Kimi, qwen-vl, Gemini, ...). Change the three `.env` lines.
-
-**Is this really free?**
-The model is free for a limited time while it's in Zen's free tier. Data sent during the free period may be used to improve the model 鈥?don't send anything sensitive.
-
-## File Listing
+## Going deeper
 
 | File | Purpose |
 |---|---|
-| `vision.py` | Single-file CLI: describe / Q&A / OCR |
-| `setup.py` / `setup.bat` | One-click setup: dependencies, `.env`, optional MCP wiring |
-| `mcp_server.py` | Optional FastMCP server exposing `describe_image` / `ocr_image` |
+| `vision.py` | Single-file CLI: describe / Q&A / OCR / model-switch commands |
+| `mcp_server.py` | MCP server: `describe_image` / `ocr_image` / `set_vision_model` |
+| `setup.py` / `setup.bat` | One-click setup |
 | `.env.example` | Configuration template |
 | `photo/` | Screenshots used in this README |
 
-## Limitations
-
-- Image-to-text only: the vision model's description is lossy; fine-grained pixel details may be missed.
-- Description quality depends on the configured vision model.
-- The free model is time-limited and collects data during the free period.
+FAQ: **Why `requests` and not `urllib`?** `urllib`'s TLS fingerprint gets flagged by Cloudflare in front of OpenCode Zen (403, error code 1010); `requests` passes. **Why read `.env` with `utf-8-sig`?** Windows PowerShell writes a BOM, which would silently break key matching; `utf-8-sig` strips it.
 
 ## Credits
 
-Inspired by and largely built on [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy) (MIT) 鈥?a beautifully small image-to-text toolkit (glance / ground / trace). This repo adapts it to OpenCode Zen's free tier, adds Windows pitfall fixes, and packages it as a single self-contained script.
+Inspired by and largely built on [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy) (MIT) — a beautifully small image-to-text toolkit. This repo adapts it to OpenCode Zen's free tier, adds Windows pitfall fixes, and packages it as a single self-contained script.
 
 ## Changelog
 
 ### v1.1.0
-- Multi-source failover: primary OpenCode Zen, fallback Zhipu (free), auto-switch; extend with `VISION3_*`/`VISION4_*`...
-- `/vision-model` command: view/switch model at runtime (zen / zhipu / glm / v3 / v4... / auto), with `/` `/help` help menu
+- Multi-source failover: primary OpenCode Zen, fallback Zhipu (free); extend with `VISION3_*`/`VISION4_*`...
+- `/vision-model` command: view/switch model at runtime, with `/` `/help` help menu
 - MCP `set_vision_model` tool added
 - Fix: fallback model changed to tested `glm-4.1v-thinking-flash`
 
 ### v1.0.0
-- Initial release: single source (OpenCode Zen `mimo-v2.5-free`), describe/Q&A/OCR, one-click setup (`setup.py` / `setup.bat`), bilingual README
+- Initial release: single source (OpenCode Zen `mimo-v2.5-free`), describe/Q&A/OCR, one-click setup, bilingual README
+
+## License
+
+[MIT](LICENSE)
