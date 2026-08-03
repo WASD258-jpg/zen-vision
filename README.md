@@ -78,6 +78,42 @@ VISION3_MODEL=你的模型ID
 
 规则：命名 `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`，N 从 3 递增；端点须为 OpenAI 兼容且支持 `image_url`；填了自动进 fallback 链（zen → zhipu → v3 → v4 → …）；`/vision-model v3` 可强制切换。
 
+## 接入 MCP（让 agent 直接看图）
+
+`mcp_server.py` 把 `vision.py` 暴露为三个工具：`describe_image`（看图）、`ocr_image`（转写）、`set_vision_model`（切换模型）。装依赖后按你的 agent 接入：
+
+```powershell
+pip install "mcp>=1.0,<2"
+```
+
+**opencode** — 编辑 `~/.config/opencode/opencode.jsonc`，在 `mcp` 节点加：
+
+```jsonc
+"vision": {
+  "type": "local",
+  "command": ["python", "E:\\path\\to\\mcp_server.py"],
+  "environment": { "CODEX_VISION_PROXY_ENV": "E:\\path\\to\\.env" },
+  "enabled": true
+}
+```
+
+**Claude Code** — 一条命令（`-s user` 全局生效）：
+
+```powershell
+claude mcp add vision -s user -e "CODEX_VISION_PROXY_ENV=E:\path\to\.env" -- python E:\path\to\mcp_server.py
+```
+
+**Codex CLI** — 编辑 `~/.codex/config.toml`，追加：
+
+```toml
+[mcp_servers.vision]
+command = "python"
+args = ["E:\\path\\to\\mcp_server.py"]
+env = { CODEX_VISION_PROXY_ENV = "E:\\path\\to\\.env" }
+```
+
+配完**重启 agent**，然后直接说"看看这张图 `E:\xxx\shot.png`"即可，DeepSeek 会自动调用工具。
+
 ## 原理
 
 ```

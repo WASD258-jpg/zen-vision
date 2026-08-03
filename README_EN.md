@@ -78,6 +78,42 @@ VISION3_MODEL=your-model-id
 
 Rules: name them `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`, N starting at 3; the endpoint must be OpenAI-compatible and accept `image_url`; once filled they join the failover chain (zen → zhipu → v3 → v4 → ...); force one with `/vision-model v3`.
 
+## MCP integration (let agents see images)
+
+`mcp_server.py` exposes `vision.py` as three tools: `describe_image`, `ocr_image`, `set_vision_model`. Install and wire it into your agent:
+
+```powershell
+pip install "mcp>=1.0,<2"
+```
+
+**opencode** — edit `~/.config/opencode/opencode.jsonc`, add to the `mcp` node:
+
+```jsonc
+"vision": {
+  "type": "local",
+  "command": ["python", "E:\\path\\to\\mcp_server.py"],
+  "environment": { "CODEX_VISION_PROXY_ENV": "E:\\path\\to\\.env" },
+  "enabled": true
+}
+```
+
+**Claude Code** — one command (`-s user` = global):
+
+```powershell
+claude mcp add vision -s user -e "CODEX_VISION_PROXY_ENV=E:\path\to\.env" -- python E:\path\to\mcp_server.py
+```
+
+**Codex CLI** — edit `~/.codex/config.toml`, append:
+
+```toml
+[mcp_servers.vision]
+command = "python"
+args = ["E:\\path\\to\\mcp_server.py"]
+env = { CODEX_VISION_PROXY_ENV = "E:\\path\\to\\.env" }
+```
+
+**Restart the agent** after wiring, then just say "look at this image `E:\xxx\shot.png`" — DeepSeek will call the tools automatically.
+
 ## How it works
 
 ```
