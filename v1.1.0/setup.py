@@ -42,12 +42,12 @@ def ensure_env():
         "VISION_MODEL=mimo-v2.5-free",
     ]
     if ask("要不要配一个备用源（主源挂了自动切换，防单点故障）？", default="n"):
-        fkey = input("备用源 API key（智谱 GLM-4.6V-Flash 免费，去 bigmodel.cn 注册拿）: ").strip()
+        fkey = input("备用源 API key（智谱 GLM-4.1V-Thinking-Flash 免费，去 bigmodel.cn 注册拿）: ").strip()
         if fkey:
             lines += [
                 f"FALLBACK_API_KEY={fkey}",
                 "FALLBACK_BASE_URL=https://open.bigmodel.cn/api/paas/v4",
-                "FALLBACK_MODEL=glm-4.6v-flash",
+                "FALLBACK_MODEL=glm-4.1v-thinking-flash",
             ]
     lines.append("LANG=zh")
     ENV_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
