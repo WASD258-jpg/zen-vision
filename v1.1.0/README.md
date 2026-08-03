@@ -63,6 +63,8 @@ python vision.py screenshot.png                     # 描述图片
 python vision.py screenshot.png -q "主色是什么"      # 针对图片提问
 python vision.py screenshot.png --ocr              # 逐字转写图中文字
 python vision.py a.png b.png                       # 一次对比多张图
+python vision.py /vision-model list                # 列出所有已配置模型
+python vision.py /vision-model v3                  # 切换模型（zen/zhipu/glm/v3/v4.../auto）
 ```
 
 ## 前置条件
@@ -83,6 +85,7 @@ python vision.py a.png b.png                       # 一次对比多张图
 | `FALLBACK_API_KEY` | 否 | 备用源 API key（智谱，免费） |
 | `FALLBACK_BASE_URL` | 否 | `https://open.bigmodel.cn/api/paas/v4` |
 | `FALLBACK_MODEL` | 否 | 备用源模型 `glm-4.1v-thinking-flash`（免费） |
+| `VISION3_API_KEY` 等 | 否 | 更多备用源（自选，可加 `VISION4_*`…） |
 | `LANG` | 否 | `zh`（中文）或 `en`（英文），默认中文 |
 
 ```
@@ -92,6 +95,10 @@ VISION_MODEL=mimo-v2.5-free
 FALLBACK_API_KEY=你的智谱key
 FALLBACK_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 FALLBACK_MODEL=glm-4.1v-thinking-flash
+# 想加更多备用源？照抄三行改成 VISION3_ / VISION4_ ... 即可（填了自动进 fallback 链）
+# VISION3_API_KEY=
+# VISION3_BASE_URL=
+# VISION3_MODEL=
 LANG=zh
 ```
 

@@ -63,6 +63,8 @@ python vision.py screenshot.png                  # describe the image
 python vision.py screenshot.png -q "dominant color?"   # ask a question
 python vision.py screenshot.png --ocr            # verbatim text transcription
 python vision.py a.png b.png                     # compare multiple images in one call
+python vision.py /vision-model list              # list all configured models
+python vision.py /vision-model v3                # switch model (zen/zhipu/glm/v3/v4.../auto)
 ```
 
 ## Prerequisites
@@ -83,6 +85,7 @@ Create a `.env` file next to `vision.py` with these lines (fallback is optional)
 | `FALLBACK_API_KEY` | No | Fallback API key (Zhipu, free) |
 | `FALLBACK_BASE_URL` | No | `https://open.bigmodel.cn/api/paas/v4` |
 | `FALLBACK_MODEL` | No | Fallback model `glm-4.1v-thinking-flash` (free) |
+| `VISION3_API_KEY` etc. | No | More fallback sources (optional; add `VISION4_*`...) |
 | `LANG` | No | `zh` (Chinese) or `en` (English); defaults to Chinese |
 
 ```
@@ -92,6 +95,10 @@ VISION_MODEL=mimo-v2.5-free
 FALLBACK_API_KEY=your-zhipu-key
 FALLBACK_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 FALLBACK_MODEL=glm-4.1v-thinking-flash
+# Add more fallbacks? Copy the three lines as VISION3_ / VISION4_ ... and they join the failover chain.
+# VISION3_API_KEY=
+# VISION3_BASE_URL=
+# VISION3_MODEL=
 LANG=zh
 ```
 
