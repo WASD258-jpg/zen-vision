@@ -104,6 +104,25 @@ LANG=zh
 
 ![The .env file, three lines](photo/03-env-config.png)
 
+### Adding a Model Source (format)
+
+Want a third or fourth vision source? Copy these three lines in `.env`, **incrementing the number**:
+
+```dotenv
+VISION3_API_KEY=your-key
+VISION3_BASE_URL=https://your-endpoint/v1
+VISION3_MODEL=your-model-id
+```
+
+Rules:
+
+| Item | Requirement |
+|---|---|
+| Naming | `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`, N starts at **3** (3, 4, 5...) |
+| Endpoint | OpenAI-compatible `/chat/completions`, must accept `image_url` image input |
+| Effect | Once filled, it joins the failover chain (zen → zhipu → v3 → v4 → ...), used in order when the primary fails |
+| Switching | `python vision.py /vision-model v3` to force it; `/vision-model auto` to restore auto |
+
 **Getting the key**: run `/connect` inside opencode, pick **OpenCode Zen**, and copy the API key from the opened browser page. It's stored locally in `.local/share/opencode/auth.json`.
 
 ![OpenCode Zen API key page](photo/04-zen-api-key.png)
