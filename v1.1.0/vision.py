@@ -57,6 +57,40 @@ def _provider(prefix):
     return (key, base, model) if key and base and model else None
 
 
+def _providers():
+    """按优先级返回所有已配置源: [(id, key, base, model), ...]
+    主源 VISION_ -> 备用 FALLBACK_ -> VISION3_ -> VISION4_ -> ...
+    """
+    result = []
+    prim = _provider("VISION_")
+    if prim:
+        result.append(("zen", *prim))
+    fb = _provider("FALLBACK_")
+    if fb:
+        result.append(("zhipu", *fb))
+    i = 3
+    while True:
+        p = _provider(f"VISION{i}_")
+        if p:
+            result.append((f"v{i}", *p))
+            i += 1
+        else:
+            break
+    return result
+
+
+def _provider_by_id(mode):
+    """按模式 id 找到对应 provider 配置。"""
+    if mode in ("zhipu", "glm"):
+        return "FALLBACK_", _provider("FALLBACK_")
+    if mode == "zen":
+        return "VISION_", _provider("VISION_")
+    if mode.startswith("v") and mode[1:].isdigit():
+        prefix = f"VISION{mode[1:]}_"
+        return prefix, _provider(prefix)
+    return None, None
+
+
 def _call(key, base, model, urls, prompt):
     payload = {
         "model": model,
@@ -108,37 +142,32 @@ def ask(urls, prompt):
     if os.environ.get("LANG", "zh").strip().lower() == "zh":
         prompt = f"请使用简体中文回答。\n\n{prompt}"
     mode = current_mode()
-    if mode in ("zhipu", "glm"):
-        cfg = _provider("FALLBACK_")
+    if mode != "auto":
+        _, cfg = _provider_by_id(mode)
         if not cfg:
-            sys.exit("备用源未配置：请在 .env 填 FALLBACK_* 三行，或 /vision-model auto 切回自动模式")
+            sys.exit(f"源 {mode} 未配置：请在 .env 填对应 VISION/FALLBACK 配置，或 /vision-model auto 切回自动模式")
         return _call(*cfg, urls, prompt)
-    primary = _provider("VISION_")
-    if not primary:
+    providers = _providers()
+    if not providers:
         sys.exit("缺少配置：请在 .env 填 VISION_API_KEY / VISION_BASE_URL / VISION_MODEL")
-    if mode == "zen":
-        return _call(*primary, urls, prompt)
-    fallback = _provider("FALLBACK_")
     errors = []
-    for name, cfg in (("主源", primary), ("备用源", fallback)):
-        if not cfg:
-            continue
+    for pid, *cfg in providers:
         try:
             return _call(*cfg, urls, prompt)
         except RuntimeError as e:
-            errors.append(f"[{name}] {e}")
+            errors.append(f"[{pid}] {e}")
     sys.exit("；".join(errors))
 
 
 def help_text():
     return (
         "可用指令：\n"
-        "  /                 显示本帮助\n"
-        "  /help             显示本帮助\n"
-        "  /vision-model     查看当前视觉模型\n"
-        "  /vision-model list   列出可用模型\n"
-        "  /vision-model <名>   切换模型（zen / zhipu / glm / auto）\n"
-        "  /vision-model auto   恢复自动切换（主源失败走备用，默认）\n"
+        "  /                    显示本帮助\n"
+        "  /help                显示本帮助\n"
+        "  /vision-model        查看当前视觉模型\n"
+        "  /vision-model list   列出所有已配置模型\n"
+        "  /vision-model <名>   切换模型（zen / zhipu / glm / v3 / v4 ... / auto）\n"
+        "  /vision-model auto   恢复自动切换（按序 fallback，默认）\n"
         "\n"
         "看图：python vision.py 图片.png [-q 问题] [--ocr]\n"
     )
@@ -147,26 +176,30 @@ def help_text():
 def vision_model_cmd(args):
     if not args:
         print(f"当前模式: {current_mode()}")
-        print("用法: /vision-model <zen|zhipu|glm|auto>")
-        print("  list   列出可用模型及配置状态")
+        print("用法: /vision-model <zen|zhipu|glm|v3|v4|...|auto>")
+        print("  list   列出所有已配置模型")
         print("  zen    用 OpenCode Zen (mimo-v2.5-free)")
         print("  zhipu  用智谱 (glm-4.1v-thinking-flash)")
         print("  glm    zhipu 的别名")
-        print("  auto   自动切换（主源失败/限流/超时走备用，默认）")
+        print("  v3/v4  额外源（在 .env 填 VISION3_*/VISION4_* 后可用）")
+        print("  auto   自动切换（主源失败/限流/超时按序走备用，默认）")
         return
     arg = args[0].lower()
     if arg == "list":
-        for name, (prefix, desc) in PROVIDERS.items():
-            if name == "glm":
-                continue
-            cfg = _provider(prefix)
-            print(f"{name}: {desc}  {'已配置' if cfg else '未配置'}")
+        providers = _providers()
+        if not providers:
+            print("尚未配置任何模型源。")
+            return
+        for pid, _key, _base, model in providers:
+            print(f"{pid}: {model}")
         return
-    if arg == "auto" or arg in PROVIDERS:
+    valid = None
+    if arg == "auto" or arg in ("zen", "zhipu", "glm") or (arg.startswith("v") and arg[1:].isdigit()):
         set_mode(arg)
-        print(f"视觉模型已切换为: {arg}" + ("（自动切换：主源失败走备用）" if arg == "auto" else f"（{PROVIDERS[arg][1]}）"))
+        desc = "自动切换（按序 fallback）" if arg == "auto" else arg
+        print(f"视觉模型已切换为: {arg}（{desc}）")
         return
-    print(f"未知模型: {arg}，可用: auto / zen / zhipu / glm / list")
+    print(f"未知模型: {arg}，可用: auto / zen / zhipu / glm / v3 / v4 ... / list")
     print("输入 /vision-model 查看详细用法")
 
 
