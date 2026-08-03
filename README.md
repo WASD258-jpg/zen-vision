@@ -6,6 +6,8 @@
 
 如果你的 DeepSeek 很强但"瞎"：看不到你贴的截图、`view_image` 全被拒、没法从图片里 debug——这个仓库就是给你的。它不换昂贵的多模态主模型，而是把图片交给 **[OpenCode Zen](https://opencode.ai/docs/zen/) 上的免费视觉模型**（`mimo-v2.5-free`），把**文字描述**喂给你的纯文本模型。现有 DeepSeek 配置完全不动。
 
+![痛点：纯文本模型看不到粘贴的截图](photo/01-pain-point.png)
+
 不需要下载任何第三方文件、不需要跑代理、起步也不需要 MCP：**一个 `.py` 文件 + 一个三行的 `.env`** 就够了。
 
 ## 一键使用（新手看这个）
@@ -20,8 +22,6 @@
 ```powershell
 python vision.py 你的图片.png
 ```
-
-![痛点：纯文本模型看不到粘贴的截图](photo/01-pain-point.png)
 
 ## 实际效果
 
