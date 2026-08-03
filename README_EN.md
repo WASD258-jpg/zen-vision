@@ -6,6 +6,8 @@ Give text-only models (DeepSeek and friends) real eyes using **OpenCode Zen's fr
 
 If your DeepSeek is powerful but blind — it can't see the screenshots you paste, every `view_image` call is rejected, and debugging from a picture is impossible — this repository is for you. Instead of switching to an expensive multimodal model, it routes images through a **free vision model** (`mimo-v2.5-free` on OpenCode Zen) and hands your text-only model a **text description**. Your existing DeepSeek setup stays untouched.
 
+![Pain point: a text-only model cannot see the pasted screenshot](photo/01-pain-point.png)
+
 No third-party files to download, no proxy to run, no MCP required to get started: one `.py` file + one `.env` with three lines.
 
 ## Quick Start (one-click)
@@ -20,8 +22,6 @@ It checks your Python, installs dependencies (`requests`, optional MCP), walks y
 ```powershell
 python vision.py your-image.png
 ```
-
-![Pain point: a text-only model cannot see the pasted screenshot](photo/01-pain-point.png)
 
 ## Real-world Effects
 
