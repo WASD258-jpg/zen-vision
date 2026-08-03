@@ -1,41 +1,41 @@
 # zen-vision
 
-Give text-only models (DeepSeek and friends) real eyes using **OpenCode Zen's free multimodal model** — a single-file script, zero downloads, zero cost.
+用 **OpenCode Zen 的免费多模态模型**给纯文本模型（DeepSeek 等）装上眼睛——单文件脚本、零下载、零成本。
 
-中文 | [English](README.md)
+中文 | [English](README_EN.md)
 
-If your DeepSeek is powerful but blind — it can't see the screenshots you paste, every `view_image` call is rejected, and debugging from a picture is impossible — this repository is for you. Instead of switching to an expensive multimodal model, it routes images through a **free vision model** (`mimo-v2.5-free` on OpenCode Zen) and hands your text-only model a **text description**. Your existing DeepSeek setup stays untouched.
+如果你的 DeepSeek 很强但"瞎"：看不到你贴的截图、`view_image` 全被拒、没法从图片里 debug——这个仓库就是给你的。它不换昂贵的多模态主模型，而是把图片交给 **[OpenCode Zen](https://opencode.ai/docs/zen/) 上的免费视觉模型**（`mimo-v2.5-free`），把**文字描述**喂给你的纯文本模型。现有 DeepSeek 配置完全不动。
 
-No third-party files to download, no proxy to run, no MCP required to get started: one `.py` file + one `.env` with three lines.
+不需要下载任何第三方文件、不需要跑代理、起步也不需要 MCP：**一个 `.py` 文件 + 一个三行的 `.env`** 就够了。
 
-## Quick Start (one-click)
+## 一键使用（新手看这个）
 
-Don't want to read the rest? Run the setup script:
+不想看后面教程？直接跑配置脚本：
 
-- **Windows**: double-click `setup.bat`
-- **Any OS**: `python setup.py`
+- **Windows**：双击 `setup.bat`
+- **任意系统**：`python setup.py`
 
-It checks your Python, installs dependencies (`requests`, optional MCP), walks you through pasting your free Zen API key, generates `.env`, tests one image, and optionally wires up MCP for opencode / Claude Code / Codex. After it finishes:
+它会自动检查 Python、安装依赖（`requests`，可选 MCP）、引导你粘贴免费的 Zen API key、生成 `.env`、测一张图，还可以一键接入 opencode / Claude Code / Codex 的 MCP。跑完之后：
 
 ```powershell
-python vision.py your-image.png
+python vision.py 你的图片.png
 ```
 
-![Pain point: a text-only model cannot see the pasted screenshot](photo/01-pain-point.png)
+![痛点：纯文本模型看不到粘贴的截图](photo/01-pain-point.png)
 
-## Real-world Effects
+## 实际效果
 
-`vision.py screenshot.png` against a plain webpage:
+对一张普通网页截图执行 `python vision.py screenshot.png`：
 
-> The page has a light background. A bold black heading at the top-left reads **"Example Domain"**, followed by a paragraph of small black text — "This domain is for use in documentation examples without needing permission. Avoid use in operations." — and a blue clickable **"Learn more"** link at the bottom.
+> 页面背景为浅色。左上角黑色粗体大标题 **"Example Domain"**，下方一段黑色小字说明——"This domain is for use in documentation examples without needing permission. Avoid use in operations."——底部还有一个蓝色可点击的 **"Learn more"** 链接。
 
-![Running vision.py](photo/02-run-example.png)
+![运行 vision.py](photo/02-run-example.png)
 
-A vision Q&A round trip — the model describes what it sees, then identifies the subject:
+一轮视觉问答——模型先描述所见，再识别主体：
 
-![Vision Q&A example](photo/05-identify-role.png)
+![视觉问答示例](photo/05-identify-role.png)
 
-`--ocr` transcribes it verbatim:
+`--ocr` 逐字转写：
 
 ```
 Example Domain
@@ -44,42 +44,42 @@ permission. Avoid use in operations.
 Learn more
 ```
 
-## Highlights
+## 亮点
 
-- **Free**: uses OpenCode Zen's `mimo-v2.5-free` (Xiaomi MiMo-V2.5, multimodal flagship) — the *only* free model on Zen that actually accepts images (all 6 free models were tested; the other 5 reject images with HTTP 400).
-- **Single file**: `vision.py` — the only dependency is `requests`. No clone, no build, no service to run.
-- **Three modes**: describe, ask (`-q`), OCR (`--ocr`).
-- **BOM-proof**: `.env` is read with `utf-8-sig`, so Windows Notepad / PowerShell writes just work.
-- **Cloudflare-proof**: uses `requests` instead of `urllib` — `urllib`'s TLS fingerprint gets flagged by Zen's Cloudflare (403, error code 1010); `requests` passes.
-- **Optional MCP server**: wrap it as a FastMCP server (`describe_image` / `ocr_image`) and plug DeepSeek into opencode, Claude Code, or Codex for a near-multimodal experience.
+- **免费**：用 OpenCode Zen 的 `mimo-v2.5-free`（小米 MiMo-V2.5 多模态旗舰）——Zen 免费档里**唯一**真正能收图的模型（6 个免费模型全部实测过，其余 5 个收图直接 HTTP 400）。
+- **单文件**：`vision.py`，唯一依赖是 `requests`。不用 clone、不用编译、不用跑服务。
+- **三种模式**：描述、提问（`-q`）、OCR（`--ocr`）。
+- **BOM 免疫**：`.env` 用 `utf-8-sig` 读取，Windows 记事本 / PowerShell 随便存都不会读不到 key。
+- **Cloudflare 免疫**：用 `requests` 而非 `urllib`——`urllib` 的 TLS 指纹会被 Zen 前面的 Cloudflare 拦（403，error code 1010），`requests` 实测能过。
+- **可选 MCP**：封装成 FastMCP server（`describe_image` / `ocr_image`），接入 opencode、Claude Code、Codex，体验接近真·多模态。
 
-## Usage
+## 用法
 
 ```powershell
 pip install requests
 
-python vision.py screenshot.png                  # describe the image
-python vision.py screenshot.png -q "dominant color?"   # ask a question
-python vision.py screenshot.png --ocr            # verbatim text transcription
-python vision.py a.png b.png                     # compare multiple images in one call
+python vision.py screenshot.png                     # 描述图片
+python vision.py screenshot.png -q "主色是什么"      # 针对图片提问
+python vision.py screenshot.png --ocr              # 逐字转写图中文字
+python vision.py a.png b.png                       # 一次对比多张图
 ```
 
-## Prerequisites
+## 前置条件
 
-- Python 3.11+ (tested on 3.13)
-- An OpenCode Zen API key (free; see below)
-- `requests` (single pip install)
+- Python 3.11+（3.13 实测通过）
+- 一个 OpenCode Zen API key（免费获取，见下）
+- `requests`（一条 pip 命令）
 
-## Configuration
+## 配置
 
-Create a `.env` file next to `vision.py` with exactly three lines:
+在 `vision.py` 同目录建一个 `.env`，就三行：
 
-| Variable | Required | Description |
+| 变量 | 必填 | 说明 |
 |---|---|---|
-| `VISION_API_KEY` | Yes | Your OpenCode Zen API key |
-| `VISION_BASE_URL` | No (default) | `https://opencode.ai/zen/v1` |
-| `VISION_MODEL` | Yes | `mimo-v2.5-free` (the free multimodal model) |
-| `LANG` | No | `zh` (Chinese) or `en` (English); defaults to Chinese |
+| `VISION_API_KEY` | 是 | 你的 OpenCode Zen API key |
+| `VISION_BASE_URL` | 否（有默认） | `https://opencode.ai/zen/v1` |
+| `VISION_MODEL` | 是 | `mimo-v2.5-free`（免费多模态模型） |
+| `LANG` | 否 | `zh`（中文）或 `en`（英文），默认中文 |
 
 ```
 VISION_API_KEY=oc-...
@@ -88,17 +88,17 @@ VISION_MODEL=mimo-v2.5-free
 LANG=zh
 ```
 
-![The .env file, three lines](photo/03-env-config.png)
+![.env 文件，就三行](photo/03-env-config.png)
 
-**Getting the key**: run `/connect` inside opencode, pick **OpenCode Zen**, and copy the API key from the opened browser page. It's stored locally in `.local/share/opencode/auth.json`.
+**怎么拿 key**：在 [opencode](https://opencode.ai) 里执行 `/connect`，选 **OpenCode Zen**，浏览器打开的页面里复制 API key。key 存在本机 `.local/share/opencode/auth.json`。
 
-![OpenCode Zen API key page](photo/04-zen-api-key.png)
+![OpenCode Zen API 密钥页面](photo/04-zen-api-key.png)
 
-## Optional: MCP Server (Multi-Agent)
+## 可选：MCP Server（多 Agent 通用）
 
-`mcp_server.py` exposes the same engine as `describe_image(path, query?)` and `ocr_image(path)` via FastMCP (stdio). Wire it into any MCP client:
+`mcp_server.py` 通过 FastMCP（stdio）把同一套引擎暴露为 `describe_image(path, query?)` 和 `ocr_image(path)` 两个工具，接进任意 MCP 客户端：
 
-- **opencode** — add to `opencode.jsonc`:
+- **opencode** — 在 `opencode.jsonc` 里加：
   ```jsonc
   "vision": {
     "type": "local",
@@ -107,11 +107,11 @@ LANG=zh
     "enabled": true
   }
   ```
-- **Claude Code**:
+- **Claude Code**：
   ```powershell
   claude mcp add vision -s user -e "CODEX_VISION_PROXY_ENV=E:\path\to\.env" -- python E:\path\to\mcp_server.py
   ```
-- **Codex CLI** — append to `~/.codex/config.toml`:
+- **Codex CLI** — 追加到 `~/.codex/config.toml`：
   ```toml
   [mcp_servers.vision]
   command = "python"
@@ -119,60 +119,60 @@ LANG=zh
   env = { CODEX_VISION_PROXY_ENV = "E:\\path\\to\\.env" }
   ```
 
-## How It Works
+## 原理
 
 ```
-Your text-only model (DeepSeek)
-        │  asks to "see" an image
+你的纯文本模型（DeepSeek）
+        │  想看一张图
         ▼
 vision.py / mcp_server.py
-        │  image -> base64 data URL
+        │  图片 → base64 data URL
         ▼
 OpenCode Zen API  https://opencode.ai/zen/v1/chat/completions
-        │  model: mimo-v2.5-free (multimodal)
+        │  模型：mimo-v2.5-free（多模态）
         ▼
-text description / verbatim OCR
+文字描述 / 逐字 OCR
         ▼
-DeepSeek (text-only) → now it "sees"
+DeepSeek（纯文本）→ 现在它"看见"了
 ```
 
-The image never reaches DeepSeek. A vision model describes it, and the description is what your text-only model reasons over — *Describe-then-Reason* (Prism, NeurIPS 2024).
+图片永远不会直接进 DeepSeek：由视觉模型描述，纯文本模型拿描述做推理——*Describe-then-Reason*（[Prism](https://arxiv.org/abs/2406.14544), NeurIPS 2024）。
 
 ## FAQ
 
-**Why `requests` and not `urllib`?**
-Because `urllib`'s TLS fingerprint is flagged by Cloudflare in front of OpenCode Zen → `403 error code: 1010`. `requests` passes. Don't "simplify" it back.
+**为什么用 `requests` 不用 `urllib`？**
+因为 `urllib` 的 TLS 指纹被 OpenCode Zen 前面的 Cloudflare 识别拦截 → `403 error code: 1010`。`requests` 能过。别"好心"改回 urllib。
 
-**Why does `.env` load with `utf-8-sig`?**
-Windows PowerShell `Set-Content -Encoding UTF8` writes a BOM; a plain read turns `VISION_API_KEY` into `\ufeffVISION_API_KEY` and the key silently fails to match. `utf-8-sig` strips it.
+**为什么 `.env` 用 `utf-8-sig` 读？**
+Windows PowerShell 的 `Set-Content -Encoding UTF8` 会写 BOM，普通读法会把 `VISION_API_KEY` 读成 `\ufeffVISION_API_KEY`，key 悄悄匹配失败。`utf-8-sig` 自动剥掉 BOM。
 
-**Which free Zen models can see images?**
-Only `mimo-v2.5-free`. Tested on 2026-08: `deepseek-v4-flash-free`, `ling-3.0-flash-free`, `nemotron-3-ultra-free`, `north-mini-code-free`, `laguna-s-2.1-free` all reject image input (HTTP 400).
+**Zen 免费模型里哪些能看图？**
+只有 `mimo-v2.5-free`。2026-08 实测：`deepseek-v4-flash-free`、`ling-3.0-flash-free`、`nemotron-3-ultra-free`、`north-mini-code-free`、`laguna-s-2.1-free` 收图全部 HTTP 400。
 
-**Can I use another vision API?**
-Yes — any OpenAI-compatible endpoint supporting `image_url` works (GLM-4V, Kimi, qwen-vl, Gemini, ...). Change the three `.env` lines.
+**能换别的视觉 API 吗？**
+能——任何支持 `image_url` 的 OpenAI 兼容端点都行（[GLM-4V](https://open.bigmodel.cn/)、[Kimi](https://platform.moonshot.cn/)、[qwen-vl](https://help.aliyun.com/zh/model-studio/)、[Gemini](https://ai.google.dev/)……），改 `.env` 三行即可。
 
-**Is this really free?**
-The model is free for a limited time while it's in Zen's free tier. Data sent during the free period may be used to improve the model — don't send anything sensitive.
+**真的免费吗？**
+模型在 Zen 免费档期间免费（限时）。免费期间发送的数据可能被用于模型改进——别发敏感内容。
 
-## File Listing
+## 文件清单
 
-| File | Purpose |
+| 文件 | 用途 |
 |---|---|
-| `vision.py` | Single-file CLI: describe / Q&A / OCR |
-| `setup.py` / `setup.bat` | One-click setup: dependencies, `.env`, optional MCP wiring |
-| `mcp_server.py` | Optional FastMCP server exposing `describe_image` / `ocr_image` |
-| `.env.example` | Configuration template |
-| `photo/` | Screenshots used in this README |
+| `vision.py` | 单文件 CLI：描述 / 问答 / OCR |
+| `setup.py` / `setup.bat` | 一键配置：装依赖、生成 `.env`、可选接入 MCP |
+| `mcp_server.py` | 可选 FastMCP server，暴露 `describe_image` / `ocr_image` |
+| `.env.example` | 配置模板 |
+| `photo/` | 本 README 使用的截图 |
 
-## Limitations
+## 限制
 
-- Image-to-text only: the vision model's description is lossy; fine-grained pixel details may be missed.
-- Description quality depends on the configured vision model.
-- The free model is time-limited and collects data during the free period.
+- 仅"图转文字"：视觉模型的描述有损，细粒度像素细节可能丢失。
+- 描述质量取决于所配的视觉模型。
+- 免费模型限时，免费期间会收集数据。
 
-## Credits
+## 致谢
 
-Inspired by and largely built on [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy) (MIT) — a beautifully small image-to-text toolkit (glance / ground / trace). This repo adapts it to OpenCode Zen's free tier, adds Windows pitfall fixes, and packages it as a single self-contained script.
+思路与核心代码大量参考 [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy)（MIT）——一个精炼的"图转文字"工具包（glance / ground / trace）。本仓库把它适配到 OpenCode Zen 的免费档，补上 Windows 的排雷，并打包成单文件自包含脚本。
 
-Built with DeepSeek, inspired by [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy).
+灵感来自 [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy)，用 DeepSeek 构建。
