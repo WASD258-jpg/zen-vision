@@ -8,7 +8,11 @@
 
 ## 这是什么
 
-DeepSeek 很强，但"瞎"——看不到你贴的截图，`view_image` 全被拒。这个项目让纯文本模型也能"看图"：把图片交给免费的多模态模型（OpenCode Zen `mimo-v2.5-free`），转成文字描述，再交给 DeepSeek 推理。不换主模型、不花一分钱、不依赖任何第三方下载。
+DeepSeek 很强，但"瞎"——看不到你贴的截图，`view_image` 全被拒，报错图只能靠肉眼翻译给它听。
+
+![痛点：纯文本模型看不到粘贴的截图](photo/01-pain-point.png)
+
+这个项目让纯文本模型也能"看图"：把图片交给免费的多模态模型（OpenCode Zen `mimo-v2.5-free`），转成文字描述，再交给 DeepSeek 推理。**不换主模型、不花一分钱、不需要下载任何东西**。
 
 核心思路一句话：**多模态翻译官 = 截图 + 视觉模型 + 文字描述 + DeepSeek**（学术上叫 *Describe-then-Reason*）。
 
@@ -29,21 +33,26 @@ DeepSeek 很强，但"瞎"——看不到你贴的截图，`view_image` 全被�
 - 逐字转写报错弹窗：`python vision.py 图片.png --ocr`
 - 一次对比多张图：`python vision.py a.png b.png`
 - 切换视觉模型：`python vision.py /vision-model zhipu`
-- 让 opencode / Claude Code / Codex 里的 DeepSeek 直接看图（MCP）
+- 让 opencode / Claude Code / Codex 里的 DeepSeek 直接看图（见下文 MCP 章节）
+
+一轮视觉问答——模型先描述所见，再识别主体：
+
+![视觉问答示例](photo/05-identify-role.png)
 
 ## 快速开始
 
 Windows 双击 `setup.bat`，或任意平台执行 `python setup.py`，跟着引导走：
 
-1. 粘贴主源 API key（opencode 里 `/connect` 选 OpenCode Zen，免费）
-2. （可选）粘贴备用源 key（智谱 `glm-4.1v-thinking-flash`，免费）
-3. 完成，直接 `python vision.py 图片.png`
+1. **粘贴主源 API key**：opencode 里执行 `/connect` 选 OpenCode Zen，浏览器弹出页面里复制 key（下图红框处）粘贴
 
-![痛点：纯文本模型看不到粘贴的截图](photo/01-pain-point.png)
+   ![OpenCode Zen API 密钥页面](photo/04-zen-api-key.png)
+
+2. **（可选）配备用源**：粘贴智谱 key（`glm-4.1v-thinking-flash`，免费），主源挂了自动切换
+3. **完成**：直接 `python vision.py 图片.png` 就能用
 
 ## 配置
 
-在 `vision.py` 同目录建 `.env`，主源三行必填，其余可选：
+在 `vision.py` 同目录建一个 `.env` 文件（记事本新建即可），主源三行必填，其余可选：
 
 | 变量 | 必填 | 说明 |
 |---|---|---|
@@ -66,6 +75,10 @@ FALLBACK_MODEL=glm-4.1v-thinking-flash
 LANG=zh
 ```
 
+![.env 文件示例](photo/03-env-config.png)
+
+> 放心用记事本保存，脚本已兼容 Windows 的编码问题，不会读不到 key。
+
 ### 新增模型源
 
 想加第三个、第四个视觉源？照抄三行，编号递增：
@@ -80,39 +93,63 @@ VISION3_MODEL=你的模型ID
 
 ## 接入 MCP（让 agent 直接看图）
 
-`mcp_server.py` 把 `vision.py` 暴露为三个工具：`describe_image`（看图）、`ocr_image`（转写）、`set_vision_model`（切换模型）。装依赖后按你的 agent 接入：
+MCP 是一个让 agent 调用外部工具的协议。本项目的 `mcp_server.py` 提供三个工具：
+
+| 工具 | 作用 | 例子 |
+|---|---|---|
+| `describe_image` | 看一张图并描述 / 回答 | 让 DeepSeek 分析截图 |
+| `ocr_image` | 逐字转写图中文字 | 读报错弹窗 |
+| `set_vision_model` | 切换视觉模型 | 换智谱 / 换回自动 |
+
+**第 1 步：装依赖**（一条命令）：
 
 ```powershell
 pip install "mcp>=1.0,<2"
 ```
 
-**opencode** — 编辑 `~/.config/opencode/opencode.jsonc`，在 `mcp` 节点加：
+**第 2 步：按你用的 agent 接入**（三选一）
 
-```jsonc
-"vision": {
-  "type": "local",
-  "command": ["python", "E:\\path\\to\\mcp_server.py"],
-  "environment": { "CODEX_VISION_PROXY_ENV": "E:\\path\\to\\.env" },
-  "enabled": true
-}
-```
+**opencode：**
+1. 找到配置文件 `~/.config/opencode/opencode.jsonc`（Windows 下是 `C:\Users\你的用户名\.config\opencode\opencode.jsonc`）
+2. 用记事本打开，在 `"mcp": { ... }` 的大括号里加一段：
 
-**Claude Code** — 一条命令（`-s user` 全局生效）：
+   ```jsonc
+   "vision": {
+     "type": "local",
+     "command": ["python", "你的绝对路径\\mcp_server.py"],
+     "environment": { "CODEX_VISION_PROXY_ENV": "你的绝对路径\\.env" },
+     "enabled": true
+   }
+   ```
+
+   把"你的绝对路径"换成 `mcp_server.py` 所在文件夹的完整路径（例如 `D:\tools\zen-vision`）
+3. 保存，**完全退出 opencode 再重开**
+4. 验证：终端执行 `opencode mcp list`，看到 `vision connected` 即成功
+
+**Claude Code：** 终端执行一条命令（替换成你的路径）：
 
 ```powershell
-claude mcp add vision -s user -e "CODEX_VISION_PROXY_ENV=E:\path\to\.env" -- python E:\path\to\mcp_server.py
+claude mcp add vision -s user -e "CODEX_VISION_PROXY_ENV=你的绝对路径\.env" -- python 你的绝对路径\mcp_server.py
 ```
 
-**Codex CLI** — 编辑 `~/.codex/config.toml`，追加：
+重启后 `claude mcp list` 看到 `vision ... Connected` 即成功。
 
-```toml
-[mcp_servers.vision]
-command = "python"
-args = ["E:\\path\\to\\mcp_server.py"]
-env = { CODEX_VISION_PROXY_ENV = "E:\\path\\to\\.env" }
-```
+**Codex CLI：**
+1. 编辑 `~/.codex/config.toml`
+2. 末尾追加：
 
-配完**重启 agent**，然后直接说"看看这张图 `E:\xxx\shot.png`"即可，DeepSeek 会自动调用工具。
+   ```toml
+   [mcp_servers.vision]
+   command = "python"
+   args = ["你的绝对路径\\mcp_server.py"]
+   env = { CODEX_VISION_PROXY_ENV = "你的绝对路径\\.env" }
+   ```
+
+3. 重启 Codex
+
+**第 3 步：使用**。配好之后，直接对 agent 说："看看这张图 `你的图片路径\shot.png`"，它就会自动调用工具看图。
+
+> 改配置前先备份原文件。以上路径均为示例占位，请替换成你自己的实际路径。
 
 ## 原理
 
@@ -149,7 +186,13 @@ DeepSeek（纯文本）→ 现在它"看见"了
 | `.env.example` | 配置模板 |
 | `photo/` | 本 README 使用的截图 |
 
-常见问题：**为什么用 `requests` 不用 `urllib`？** `urllib` 的 TLS 指纹被 Zen 前面的 Cloudflare 识别拦截（403，error code 1010），`requests` 实测能过。**`.env` 为什么用 `utf-8-sig` 读？** Windows PowerShell 写文件会带 BOM，普通读法 key 会悄悄匹配失败，`utf-8-sig` 自动剥掉。
+常见问题：
+
+**为什么用 `requests` 不用 `urllib`？** `urllib` 的 TLS 指纹被 Zen 前面的 Cloudflare 识别拦截（403，error code 1010），`requests` 实测能过。
+
+**`.env` 为什么用 `utf-8-sig` 读？** Windows PowerShell 写文件会带 BOM，普通读法 key 会悄悄匹配失败，`utf-8-sig` 自动剥掉。
+
+**Zen 免费模型里哪些能看图？** 实测只有 `mimo-v2.5-free` 支持图像输入，其余 free 模型发图全部 HTTP 400。
 
 ## 致谢
 
