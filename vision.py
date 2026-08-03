@@ -130,10 +130,29 @@ def ask(urls, prompt):
     sys.exit("；".join(errors))
 
 
+def help_text():
+    return (
+        "可用指令：\n"
+        "  /                 显示本帮助\n"
+        "  /help             显示本帮助\n"
+        "  /vision-model     查看当前视觉模型\n"
+        "  /vision-model list   列出可用模型\n"
+        "  /vision-model <名>   切换模型（zen / zhipu / glm / auto）\n"
+        "  /vision-model auto   恢复自动切换（主源失败走备用，默认）\n"
+        "\n"
+        "看图：python vision.py 图片.png [-q 问题] [--ocr]\n"
+    )
+
+
 def vision_model_cmd(args):
     if not args:
         print(f"当前模式: {current_mode()}")
-        print("可用: auto（自动切换）/ zen / zhipu / glm / list")
+        print("用法: /vision-model <zen|zhipu|glm|auto>")
+        print("  list   列出可用模型及配置状态")
+        print("  zen    用 OpenCode Zen (mimo-v2.5-free)")
+        print("  zhipu  用智谱 (glm-4.1v-thinking-flash)")
+        print("  glm    zhipu 的别名")
+        print("  auto   自动切换（主源失败/限流/超时走备用，默认）")
         return
     arg = args[0].lower()
     if arg == "list":
@@ -148,6 +167,7 @@ def vision_model_cmd(args):
         print(f"视觉模型已切换为: {arg}" + ("（自动切换：主源失败走备用）" if arg == "auto" else f"（{PROVIDERS[arg][1]}）"))
         return
     print(f"未知模型: {arg}，可用: auto / zen / zhipu / glm / list")
+    print("输入 /vision-model 查看详细用法")
 
 
 def main():
@@ -160,10 +180,13 @@ def main():
     load_env()
     if args.images and args.images[0].startswith("/"):
         cmd = args.images[0].lower()
-        if cmd == "/vision-model":
+        if cmd in ("/", "/help", "/h"):
+            print(help_text())
+        elif cmd == "/vision-model":
             vision_model_cmd(args.images[1:])
         else:
-            print(f"未知指令: {cmd}（可用 /vision-model）")
+            print(f"未知指令: {cmd}")
+            print(help_text())
         return
     urls = [data_url(p) for p in args.images]
     if args.ocr is not None:
