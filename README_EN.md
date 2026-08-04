@@ -25,6 +25,7 @@ The core idea in one line: **translation = screenshot + vision model + text desc
 - **MCP integration**: `describe_image` / `ocr_image` / `set_vision_model` tools for opencode, Claude Code, Codex
 - **One-click setup**: `setup.py` / `setup.bat`
 - **Hardened**: BOM-proof `.env` loading; `requests` instead of `urllib` to pass Cloudflare
+- **Live vision (watch)**: monitor screen / video / camera — local pixel-diff change detection (zero API calls), describe only when something changes
 
 ## What you can do with it
 
@@ -34,6 +35,9 @@ The core idea in one line: **translation = screenshot + vision model + text desc
 - Compare multiple images: `python vision.py a.png b.png`
 - Switch vision model at runtime: `python vision.py /vision-model zhipu`
 - Let DeepSeek inside opencode / Claude Code / Codex see images (see MCP section below)
+- Live screen monitoring: `python watch.py screen`
+- Analyze a video: `python watch.py video video.mp4`
+- Camera monitoring: `python watch.py camera`
 
 A vision Q&A round trip — the model describes what it sees, then identifies the subject:
 
@@ -110,7 +114,7 @@ pip install "mcp>=1.0,<2"
 **Step 2 — wire it into your agent** (pick one)
 
 **opencode:**
-1. Find the config file `~/.config/opencode/opencode.jsonc` (on Windows: `C:\Users\YOUR-USERNAME\.config\opencode\opencode.jsonc`)
+1. Find the config file `~/.config/opencode/opencode.jsonc` (on Windows it lives in `.config\opencode\opencode.jsonc` under your user directory)
 2. Open it in a text editor, add inside the `"mcp": { ... }` braces:
 
    ```jsonc
@@ -184,6 +188,7 @@ The image never reaches DeepSeek. A vision model describes it, and the descripti
 | `mcp_server.py` | MCP server: `describe_image` / `ocr_image` / `set_vision_model` |
 | `setup.py` / `setup.bat` | One-click setup |
 | `.env.example` | Configuration template |
+| `watch.py` | Live vision: monitor screen/video/camera, describe on change |
 | `photo/` | Screenshots used in this README |
 
 FAQ:
@@ -199,6 +204,9 @@ FAQ:
 Inspired by and largely built on [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy) (MIT) — a beautifully small image-to-text toolkit. This repo adapts it to OpenCode Zen's free tier, adds Windows pitfall fixes, and packages it as a single self-contained script.
 
 ## Changelog
+
+### v1.2.0
+- New live-vision `watch.py`: monitor screen / video / camera; local pixel-diff change detection (zero API calls), describes only on change; debounce + cooldown to avoid false/duplicate reports
 
 ### v1.1.0
 - Multi-source failover: primary OpenCode Zen, fallback Zhipu (free); extend with `VISION3_*`/`VISION4_*`...
