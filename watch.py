@@ -19,7 +19,11 @@ from PIL import Image, ImageChops, ImageGrab
 
 import vision
 
-DEFAULT_PROMPT = "描述这张画面上的内容：可见的文字、界面元素、明显的事件或变化。"
+DEFAULT_PROMPT = (
+    "描述这张画面上的内容：可见的文字、界面元素、明显的事件或变化。"
+    "说明各元素的位置（用九宫格方位：左上/上中/右上/左中/中央/右中/左下/下中/右下）"
+    "和相对位置（如'弹窗在中央，按钮在弹窗右下角'）。"
+)
 
 
 def mad(a, b, size=64):
