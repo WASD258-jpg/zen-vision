@@ -58,5 +58,22 @@ class TestWatchMad(unittest.TestCase):
         self.assertGreater(watch.mad(a, c), 50.0)
 
 
+class TestSpatial(unittest.TestCase):
+    def test_detect_returns_list(self):
+        import spatial
+        from PIL import Image
+        img = Image.new("RGB", (320, 240), (180, 180, 180))
+        dets = spatial.detect(img)
+        self.assertIsInstance(dets, list)
+        for d in dets:
+            self.assertEqual(len(d), 6)
+
+    def test_format_detections(self):
+        import spatial
+        s = spatial.format_detections([("person", 0.9, 1, 2, 3, 4)])
+        self.assertIn("person(1,2,3,4)", s)
+        self.assertEqual(spatial.format_detections([]), "(未检测到物体)")
+
+
 if __name__ == "__main__":
     unittest.main()
