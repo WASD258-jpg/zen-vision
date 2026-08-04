@@ -264,6 +264,7 @@ def main():
     g = ap.add_mutually_exclusive_group()
     g.add_argument("-q", "--query", help="针对图片提问")
     g.add_argument("--ocr", nargs="?", const="", help="逐字转写图中文字")
+    ap.add_argument("--spatial", action="store_true", help="附加本地物体检测（YOLO bbox 像素坐标）")
     args = ap.parse_args()
     load_env()
     if args.images and args.images[0].startswith("/"):
@@ -292,7 +293,16 @@ def main():
             "并尽量说明元素之间的相对位置（如'标题在页面顶部居中'、"
             "'弹窗位于屏幕中央，按钮在弹窗右下角'、'人物在场景左侧，面向右侧'）。"
         )
-    print(ask(urls, prompt))
+    result = ask(urls, prompt)
+    if args.spatial and len(args.images) == 1:
+        try:
+            import spatial
+            from PIL import Image
+            dets = spatial.detect(Image.open(args.images[0]))
+            result += "\n\n[空间检测] " + spatial.format_detections(dets)
+        except BaseException as e:
+            result += f"\n\n[空间检测] 失败: {e}"
+    print(result)
 
 
 if __name__ == "__main__":
