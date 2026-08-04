@@ -12,11 +12,8 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 
-class TestSpatialPrompt(unittest.TestCase):
+class TestPrompt(unittest.TestCase):
     def test_default_prompt_has_spatial_terms(self):
-        import vision
-        # 通过 CLI 路径触发默认 prompt 的构造逻辑：
-        # 直接在源码里确认空间提示词存在（避免模拟完整 CLI）
         src = (ROOT / "vision.py").read_text(encoding="utf-8")
         self.assertIn("九宫格", src)
         self.assertIn("相对坐标", src)

@@ -179,6 +179,7 @@ DeepSeek（纯文本）→ 现在它"看见"了
 - `.env`（含 API key）与 `.vision-model` 状态文件被 `.gitignore` 忽略，不会进入仓库
 - 免费模型在免费期间可能收集数据用于模型改进——不要发送含密码、身份证等敏感信息的截图
 - 免费是限时的：Zen 的 free 模型可能下架，届时多源备用链会自动接管，或改 `.env` 换端点
+- **MCP 工具接受任意本地文件路径**：传给 `describe_image` / `ocr_image` / `watch_video` 的图片/视频会 base64 后发往第三方视觉 API——只把 MCP 暴露给可信的 agent/调用方，不要对不受信任的输入开放
 
 ## 深入
 
