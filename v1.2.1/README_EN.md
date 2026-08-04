@@ -211,6 +211,14 @@ Inspired by and largely built on [Anionex/codex-vision-proxy](https://github.com
 
 ## Changelog
 
+### v1.2.1
+- **Disk cache**: same image + same question returns instantly (200MB cap, auto-cleanup); `/cache` commands + MCP `cache_list` / `cache_clear` for browsing history
+- **watch change summary**: compares before/after frames and describes "what changed into what"
+- **Leaner**: watch dropped numpy (pure PIL); tiered dependencies (`opencv-python` optional, ~5MB for plain viewing)
+- **MCP polish**: added `cache_list` / `cache_clear` tools; added `.mcp.json` template for one-click import in Claude Desktop / Cursor etc.
+- Added watch live-demo screenshot (CS match monitoring)
+- Split downloads: `zen-vision-scripts-min.zip` (lean) / `zen-vision-scripts-full.zip` (full, includes watch)
+
 ### v1.2.0
 - New live-vision `watch.py`: monitor screen / video / camera; local pixel-diff change detection (zero API calls), describes only on change; debounce + cooldown to avoid false/duplicate reports
 
