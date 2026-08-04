@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import vision  # noqa: E402
+import watch  # noqa: E402
 
 from mcp.server.fastmcp import FastMCP  # noqa: E402
 
@@ -18,7 +19,9 @@ mcp = FastMCP(
         "descriptions or verbatim OCR via a multimodal API. "
         "Use describe_image / ocr_image to look at images; use "
         "set_vision_model to switch between vision sources "
-        "(zen = OpenCode Zen default, zhipu/glm = Zhipu fallback, auto = auto-failover)."
+        "(zen = OpenCode Zen default, zhipu/glm = Zhipu fallback, auto = auto-failover); "
+        "use watch_screen / watch_video to monitor the screen or a video and "
+        "describe what changes."
     ),
 )
 
@@ -55,6 +58,65 @@ def set_vision_model(model: str = "") -> str:
             return f"未知模型: {model}，可用: auto / zen / zhipu / glm"
         vision.set_mode(model)
         return f"视觉模型已切换为: {model}"
+    except BaseException as exc:
+        return f"error: {exc}"
+
+
+def _fmt_changes(results):
+    if not results:
+        return "监控期间画面无变化。"
+    lines = [f"检测到 {len(results)} 次画面变化："]
+    lines += [f"[{t}] {d}" for t, d in results]
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def watch_screen(duration: int = 30, interval: float = 1.0, threshold: float = 8.0, query: str = "") -> str:
+    """Monitor the screen for `duration` seconds and describe detected changes.
+    Args: duration (seconds, default 30), interval (sampling seconds, default 1),
+    threshold (change sensitivity 0-255, default 8), query (custom prompt).
+    Returns a list of change events with timestamps."""
+    try:
+        from PIL import ImageGrab
+        results = watch.collect_changes(
+            lambda: ImageGrab.grab(),
+            duration=duration, interval=interval, threshold=threshold, query=query or None,
+        )
+        return _fmt_changes(results)
+    except BaseException as exc:
+        return f"error: {exc}"
+
+
+@mcp.tool()
+def watch_video(path: str, every: float = 1.0, threshold: float = 8.0, query: str = "") -> str:
+    """Analyze a video file and describe detected scene changes.
+    Args: path (video file), every (sampling seconds, default 1),
+    threshold (change sensitivity 0-255, default 8), query (custom prompt).
+    Returns a list of change events with timestamps."""
+    try:
+        import cv2
+        from PIL import Image
+        cap = cv2.VideoCapture(path)
+        if not cap.isOpened():
+            return f"error: 无法打开视频 {path}"
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30
+        total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        step = max(1, int(round(fps * every)))
+
+        def grab():
+            for _ in range(step):
+                ret, frame = cap.read()
+                if not ret:
+                    return None
+            return Image.fromarray(frame[:, :, ::-1])
+
+        try:
+            results = watch.collect_changes(
+                grab, duration=total / fps, interval=0, threshold=threshold, query=query or None,
+            )
+        finally:
+            cap.release()
+        return _fmt_changes(results)
     except BaseException as exc:
         return f"error: {exc}"
 

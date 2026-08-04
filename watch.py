@@ -51,37 +51,67 @@ def watch_loop(get_frame, args):
     trigger_count = 0
     last_trigger = 0.0
     print("监控中（Ctrl+C 停止）...")
-    while True:
+    for time_str, desc in collect_changes(
+        get_frame,
+        duration=None,
+        interval=args.interval,
+        threshold=args.threshold,
+        cooldown=args.cooldown,
+        stable=args.stable,
+        query=args.query,
+        on_change=lambda t, d, n: report(d, n, args.once),
+    ):
+        pass
+
+
+def collect_changes(get_frame, duration=None, interval=1.0, threshold=8.0,
+                    cooldown=8.0, stable=2, query=None, on_change=None):
+    """监控直到 duration 秒（None=无限），返回 [(时间, 描述), ...]。
+    get_frame: 取一帧 PIL Image 的可调用对象（返回 None 表示结束/失败）。
+    on_change: 可选回调 (时间, 描述, 序号)，用于实时打印。
+    """
+    results = []
+    baseline = None
+    pending = 0
+    trigger_count = 0
+    last_trigger = 0.0
+    start = time.time()
+    while duration is None or time.time() - start < duration:
         try:
             frame = get_frame()
         except Exception as e:
             print(f"取帧失败: {e}")
-            time.sleep(args.interval)
+            if interval:
+                time.sleep(interval)
             continue
         if frame is None:
-            time.sleep(args.interval)
-            continue
+            break
         if baseline is None:
             baseline = frame
         else:
             diff = mad(frame, baseline)
             now = time.time()
-            if diff >= args.threshold:
+            if diff >= threshold:
                 pending += 1
-                if pending >= args.stable and now - last_trigger >= args.cooldown:
+                if pending >= stable and now - last_trigger >= cooldown:
                     try:
-                        desc = analyze(frame, args.query or DEFAULT_PROMPT)
-                        trigger_count += 1
-                        if report(desc, trigger_count, args.once):
-                            return
+                        desc = analyze(frame, query or DEFAULT_PROMPT)
                     except SystemExit as e:
-                        print(f"分析失败: {e}")
+                        desc = f"(分析失败: {e})"
+                    time_str = time.strftime("%H:%M:%S")
+                    results.append((time_str, desc))
+                    trigger_count += 1
+                    if on_change:
+                        if on_change(time_str, desc, trigger_count):
+                            break
                     baseline = frame
                     last_trigger = now
                     pending = 0
             else:
                 pending = 0
-        time.sleep(args.interval)
+        if interval:
+            time.sleep(interval)
+    return results
 
 
 def cmd_screen(args):
