@@ -5,8 +5,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import time  # noqa: E402
+
 import vision  # noqa: E402
 import watch  # noqa: E402
+import cache  # noqa: E402
 
 from mcp.server.fastmcp import FastMCP  # noqa: E402
 
@@ -117,6 +120,34 @@ def watch_video(path: str, every: float = 1.0, threshold: float = 8.0, query: st
         finally:
             cap.release()
         return _fmt_changes(results)
+    except BaseException as exc:
+        return f"error: {exc}"
+
+
+@mcp.tool()
+def cache_list(limit: int = 10) -> str:
+    """List recent cached vision descriptions (browse analysis history).
+    Args: limit (max entries, default 10).
+    Returns entries with timestamps, newest first."""
+    try:
+        entries = cache.list_entries(limit)
+        if not entries:
+            return "缓存为空。"
+        lines = [f"最近 {len(entries)} 条（时间倒序）："]
+        for _fp, t, desc, _prompt in entries:
+            ts = time.strftime("%m-%d %H:%M", time.localtime(t))
+            lines.append(f"[{ts}] {desc[:80]}")
+        return "\n".join(lines)
+    except BaseException as exc:
+        return f"error: {exc}"
+
+
+@mcp.tool()
+def cache_clear() -> str:
+    """Clear the vision disk cache (all stored descriptions)."""
+    try:
+        cache.clear()
+        return "缓存已清空。"
     except BaseException as exc:
         return f"error: {exc}"
 
