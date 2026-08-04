@@ -191,6 +191,16 @@ DeepSeek（纯文本）→ 现在它"看见"了
 | `watch.py` | 实时视力：监控屏幕/视频/摄像头，变化时自动描述 |
 | `photo/` | 本 README 使用的截图 |
 
+### 依赖说明（可选安装，控制硬盘占用）
+
+| 功能 | 依赖 | 大小 | 是否必须 |
+|---|---|---|---|
+| `vision.py`（描述 / 问答 / OCR） | `requests` | ~1 MB | 必须 |
+| `watch.py` screen（屏幕监控） | `pillow` | ~4 MB | 推荐（setup 默认装） |
+| `watch.py` video / camera | `opencv-python` | ~90 MB | **可选**（不需要可不装） |
+
+`setup.py` 安装时会询问是否装视频/摄像头支持；只要纯看图 + 屏幕监控，本地依赖约 **5 MB** 即可，远低于完整版 ~100 MB。
+
 常见问题：
 
 **为什么用 `requests` 不用 `urllib`？** `urllib` 的 TLS 指纹被 Zen 前面的 Cloudflare 识别拦截（403，error code 1010），`requests` 实测能过。

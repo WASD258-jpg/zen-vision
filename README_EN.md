@@ -1,14 +1,14 @@
 # zen-vision
 
-Give text-only models (DeepSeek and friends) real eyes using **free multimodal models** — a single-file script, zero downloads, zero cost.
+Give text-only models (DeepSeek and friends) real eyes using **free multimodal models** 鈥?a single-file script, zero downloads, zero cost.
 
-English | [中文](README.md)
+English | [涓枃](README.md)
 
 ![Running: vision.py describing a webpage screenshot](photo/02-run-example.png)
 
 ## What is this
 
-DeepSeek is powerful but blind — it can't see pasted screenshots, every `view_image` call is rejected, and error dialogs have to be read to it by hand.
+DeepSeek is powerful but blind 鈥?it can't see pasted screenshots, every `view_image` call is rejected, and error dialogs have to be read to it by hand.
 
 ![Pain point: a text-only model cannot see the pasted screenshot](photo/01-pain-point.png)
 
@@ -25,7 +25,7 @@ The core idea in one line: **translation = screenshot + vision model + text desc
 - **MCP integration**: `describe_image` / `ocr_image` / `set_vision_model` tools for opencode, Claude Code, Codex
 - **One-click setup**: `setup.py` / `setup.bat`
 - **Hardened**: BOM-proof `.env` loading; `requests` instead of `urllib` to pass Cloudflare
-- **Live vision (watch)**: monitor screen / video / camera — local pixel-diff change detection (zero API calls), describe only when something changes
+- **Live vision (watch)**: monitor screen / video / camera 鈥?local pixel-diff change detection (zero API calls), describe only when something changes
 
 ## What you can do with it
 
@@ -39,7 +39,7 @@ The core idea in one line: **translation = screenshot + vision model + text desc
 - Analyze a video: `python watch.py video video.mp4`
 - Camera monitoring: `python watch.py camera`
 
-A vision Q&A round trip — the model describes what it sees, then identifies the subject:
+A vision Q&A round trip 鈥?the model describes what it sees, then identifies the subject:
 
 ![Vision Q&A example](photo/05-identify-role.png)
 
@@ -51,7 +51,7 @@ On Windows double-click `setup.bat`, or run `python setup.py` on any platform:
 
    ![OpenCode Zen API key page](photo/04-zen-api-key.png)
 
-2. **(Optional) Add a fallback**: paste a Zhipu key (`glm-4.1v-thinking-flash`, free) — auto-switches if the primary fails
+2. **(Optional) Add a fallback**: paste a Zhipu key (`glm-4.1v-thinking-flash`, free) 鈥?auto-switches if the primary fails
 3. **Done**: `python vision.py image.png` just works
 
 ## Configuration
@@ -81,7 +81,7 @@ LANG=zh
 
 ![The .env file](photo/03-env-config.png)
 
-> Save it with any text editor — the script handles Windows encoding quirks automatically.
+> Save it with any text editor 鈥?the script handles Windows encoding quirks automatically.
 
 ### Adding a model source
 
@@ -93,7 +93,7 @@ VISION3_BASE_URL=https://your-endpoint/v1
 VISION3_MODEL=your-model-id
 ```
 
-Rules: name them `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`, N starting at 3; the endpoint must be OpenAI-compatible and accept `image_url`; once filled they join the failover chain (zen → zhipu → v3 → v4 → ...); force one with `/vision-model v3`.
+Rules: name them `VISION{N}_API_KEY` / `VISION{N}_BASE_URL` / `VISION{N}_MODEL`, N starting at 3; the endpoint must be OpenAI-compatible and accept `image_url`; once filled they join the failover chain (zen 鈫?zhipu 鈫?v3 鈫?v4 鈫?...); force one with `/vision-model v3`.
 
 ## MCP integration (let agents see images)
 
@@ -105,13 +105,13 @@ MCP is a protocol that lets agents call external tools. This project's `mcp_serv
 | `ocr_image` | Transcribe visible text verbatim | Read an error dialog |
 | `set_vision_model` | Switch the vision model | Use Zhipu, or back to auto |
 
-**Step 1 — install the dependency:**
+**Step 1 鈥?install the dependency:**
 
 ```powershell
 pip install "mcp>=1.0,<2"
 ```
 
-**Step 2 — wire it into your agent** (pick one)
+**Step 2 鈥?wire it into your agent** (pick one)
 
 **opencode:**
 1. Find the config file `~/.config/opencode/opencode.jsonc` (on Windows it lives in `.config\opencode\opencode.jsonc` under your user directory)
@@ -128,7 +128,7 @@ pip install "mcp>=1.0,<2"
 
    Replace `YOUR-ABSOLUTE-PATH` with the full folder path containing `mcp_server.py` (e.g. `D:\tools\zen-vision`)
 3. Save, then **fully quit and reopen opencode**
-4. Verify: run `opencode mcp list` — you should see `vision connected`
+4. Verify: run `opencode mcp list` 鈥?you should see `vision connected`
 
 **Claude Code:** run one command (replace the path):
 
@@ -151,33 +151,29 @@ After restarting, `claude mcp list` should show `vision ... Connected`.
 
 3. Restart Codex
 
-**Step 3 — use it.** Once wired up, just say: "look at this image `YOUR-IMAGE-PATH\shot.png`" — the agent calls the tool automatically.
+**Step 3 鈥?use it.** Once wired up, just say: "look at this image `YOUR-IMAGE-PATH\shot.png`" 鈥?the agent calls the tool automatically.
 
-> Back up config files before editing. All paths above are placeholders — replace them with your own.
+> Back up config files before editing. All paths above are placeholders 鈥?replace them with your own.
 
 ## How it works
 
 ```
 Your text-only model (DeepSeek)
-        │  asks to "see" an image
-        ▼
-vision.py / mcp_server.py
-        │  image -> base64 data URL
-        ▼
-Vision API (multi-source: zen → zhipu → v3 → ...)
-        │  model describes the image
-        ▼
-text description / verbatim OCR
-        ▼
-DeepSeek (text-only) → now it "sees"
+        鈹? asks to "see" an image
+        鈻?vision.py / mcp_server.py
+        鈹? image -> base64 data URL
+        鈻?Vision API (multi-source: zen 鈫?zhipu 鈫?v3 鈫?...)
+        鈹? model describes the image
+        鈻?text description / verbatim OCR
+        鈻?DeepSeek (text-only) 鈫?now it "sees"
 ```
 
-The image never reaches DeepSeek. A vision model describes it, and the description is what your text-only model reasons over — *Describe-then-Reason* ([Prism](https://arxiv.org/abs/2406.14544), NeurIPS 2024).
+The image never reaches DeepSeek. A vision model describes it, and the description is what your text-only model reasons over 鈥?*Describe-then-Reason* ([Prism](https://arxiv.org/abs/2406.14544), NeurIPS 2024).
 
 ## Security
 
-- `.env` (API keys) and the `.vision-model` state file are gitignored — never committed
-- Free models may collect data during the free period — don't send passwords or sensitive screenshots
+- `.env` (API keys) and the `.vision-model` state file are gitignored 鈥?never committed
+- Free models may collect data during the free period 鈥?don't send passwords or sensitive screenshots
 - Free tiers are time-limited; if a source goes away, the failover chain takes over, or change the `.env` endpoint
 
 ## Going deeper
@@ -201,7 +197,7 @@ FAQ:
 
 ## Credits
 
-Inspired by and largely built on [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy) (MIT) — a beautifully small image-to-text toolkit. This repo adapts it to OpenCode Zen's free tier, adds Windows pitfall fixes, and packages it as a single self-contained script.
+Inspired by and largely built on [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy) (MIT) 鈥?a beautifully small image-to-text toolkit. This repo adapts it to OpenCode Zen's free tier, adds Windows pitfall fixes, and packages it as a single self-contained script.
 
 ## Changelog
 
