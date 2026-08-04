@@ -16,6 +16,8 @@ from pathlib import Path
 
 import requests
 
+import cache
+
 OCR_PROMPT = (
     "Transcribe every piece of visible text in this image verbatim "
     "(titles, body text, labels, watermarks, etc.), line by line, "
@@ -141,22 +143,49 @@ def set_mode(mode):
 def ask(urls, prompt):
     if os.environ.get("LANG", "zh").strip().lower() == "zh":
         prompt = f"请使用简体中文回答。\n\n{prompt}"
+    cached = _cache_get(urls, prompt)
+    if cached is not None:
+        return cached
     mode = current_mode()
     if mode != "auto":
         _, cfg = _provider_by_id(mode)
         if not cfg:
             sys.exit(f"源 {mode} 未配置：请在 .env 填对应 VISION/FALLBACK 配置，或 /vision-model auto 切回自动模式")
-        return _call(*cfg, urls, prompt)
+        return _cache_put(urls, prompt, _call(*cfg, urls, prompt))
     providers = _providers()
     if not providers:
         sys.exit("缺少配置：请在 .env 填 VISION_API_KEY / VISION_BASE_URL / VISION_MODEL")
     errors = []
     for pid, *cfg in providers:
         try:
-            return _call(*cfg, urls, prompt)
+            return _cache_put(urls, prompt, _call(*cfg, urls, prompt))
         except RuntimeError as e:
             errors.append(f"[{pid}] {e}")
     sys.exit("；".join(errors))
+
+
+def _cache_key(urls, prompt):
+    if len(urls) != 1:
+        return None
+    fp = cache.fingerprint(urls[0].encode("utf-8"))
+    return fp, prompt
+
+
+def _cache_get(urls, prompt):
+    key = _cache_key(urls, prompt)
+    if not key:
+        return None
+    hit = cache.get(*key)
+    if hit:
+        return hit["d"]
+    return None
+
+
+def _cache_put(urls, prompt, text):
+    key = _cache_key(urls, prompt)
+    if key:
+        cache.put(*key, text)
+    return text
 
 
 def help_text():
@@ -168,9 +197,35 @@ def help_text():
         "  /vision-model list   列出所有已配置模型\n"
         "  /vision-model <名>   切换模型（zen / zhipu / glm / v3 / v4 ... / auto）\n"
         "  /vision-model auto   恢复自动切换（按序 fallback，默认）\n"
+        "  /cache               查看缓存统计\n"
+        "  /cache list          列出最近缓存（翻看历史描述）\n"
+        "  /cache clear         清空缓存\n"
         "\n"
         "看图：python vision.py 图片.png [-q 问题] [--ocr]\n"
     )
+
+
+def cache_cmd(args):
+    if not args:
+        info = cache.info()
+        print(f"缓存: {info['entries']} 条, {info['size_mb']} MB / 上限 {info['limit_mb']} MB")
+        return
+    arg = args[0].lower()
+    if arg == "list":
+        entries = cache.list_entries(20)
+        if not entries:
+            print("缓存为空。")
+            return
+        print(f"最近 {len(entries)} 条（时间倒序）：")
+        for fp, t, desc, prompt in entries:
+            ts = time.strftime("%m-%d %H:%M", time.localtime(t))
+            print(f"  [{ts}] {desc[:60]}")
+        return
+    if arg == "clear":
+        cache.clear()
+        print("缓存已清空。")
+        return
+    print(f"未知参数: {arg}，可用: list / clear（无参数 = 统计）")
 
 
 def vision_model_cmd(args):
@@ -217,6 +272,8 @@ def main():
             print(help_text())
         elif cmd == "/vision-model":
             vision_model_cmd(args.images[1:])
+        elif cmd == "/cache":
+            cache_cmd(args.images[1:])
         else:
             print(f"未知指令: {cmd}")
             print(help_text())
