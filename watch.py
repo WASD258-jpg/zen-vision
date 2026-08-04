@@ -41,6 +41,18 @@ def analyze(img, prompt):
     return vision.ask([pil_to_data_url(img)], prompt)
 
 
+def analyze_change(before, after, prompt):
+    """变化摘要：把变化前后两帧一起发给模型，让它讲清'从什么变成了什么'。"""
+    urls = [pil_to_data_url(before), pil_to_data_url(after)]
+    text = (
+        f"{prompt or DEFAULT_PROMPT}\n"
+        "第一张图是变化前的画面，第二张图是变化后的画面。"
+        "请对比两张图，说明发生了什么变化：从什么变成了什么，"
+        "包括新增/消失的界面元素、文字、状态变化。"
+    )
+    return vision.ask(urls, text)
+
+
 def report(desc, count, once):
     print(f"\n[{time.strftime('%H:%M:%S')}] 画面变化 #{count}:")
     print(desc)
@@ -97,7 +109,7 @@ def collect_changes(get_frame, duration=None, interval=1.0, threshold=8.0,
                 pending += 1
                 if pending >= stable and now - last_trigger >= cooldown:
                     try:
-                        desc = analyze(frame, query or DEFAULT_PROMPT)
+                        desc = analyze_change(baseline, frame, query)
                     except SystemExit as e:
                         desc = f"(分析失败: {e})"
                     time_str = time.strftime("%H:%M:%S")
