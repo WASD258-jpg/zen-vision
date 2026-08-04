@@ -25,6 +25,7 @@ DeepSeek 很强，但"瞎"——看不到你贴的截图，`view_image` 全被�
 - **MCP 集成**：`describe_image` / `ocr_image` / `set_vision_model` 工具，接入 opencode、Claude Code、Codex
 - **一键配置**：`setup.py` / `setup.bat`，自动装依赖、引导填 key、可选接入 MCP
 - **兼容性好**：`.env` 读取免疫 Windows BOM；HTTP 用 `requests` 免疫 Cloudflare 拦截
+- **实时视力（watch）**：监控屏幕 / 视频 / 摄像头，本地检测画面变化（零 API），有变化才调模型描述
 
 ## 你能用它做什么
 
@@ -34,6 +35,9 @@ DeepSeek 很强，但"瞎"——看不到你贴的截图，`view_image` 全被�
 - 一次对比多张图：`python vision.py a.png b.png`
 - 切换视觉模型：`python vision.py /vision-model zhipu`
 - 让 opencode / Claude Code / Codex 里的 DeepSeek 直接看图（见下文 MCP 章节）
+- 实时监控屏幕：`python watch.py screen`
+- 分析视频：`python watch.py video 视频.mp4`
+- 摄像头监控：`python watch.py camera`
 
 一轮视觉问答——模型先描述所见，再识别主体：
 
@@ -110,7 +114,7 @@ pip install "mcp>=1.0,<2"
 **第 2 步：按你用的 agent 接入**（三选一）
 
 **opencode：**
-1. 找到配置文件 `~/.config/opencode/opencode.jsonc`（Windows 下是 `C:\Users\你的用户名\.config\opencode\opencode.jsonc`）
+1. 找到配置文件 `~/.config/opencode/opencode.jsonc`（Windows 下在你的用户目录下的 `.config\opencode\opencode.jsonc`）
 2. 用记事本打开，在 `"mcp": { ... }` 的大括号里加一段：
 
    ```jsonc
@@ -184,6 +188,7 @@ DeepSeek（纯文本）→ 现在它"看见"了
 | `mcp_server.py` | MCP server：`describe_image` / `ocr_image` / `set_vision_model` |
 | `setup.py` / `setup.bat` | 一键配置 |
 | `.env.example` | 配置模板 |
+| `watch.py` | 实时视力：监控屏幕/视频/摄像头，变化时自动描述 |
 | `photo/` | 本 README 使用的截图 |
 
 常见问题：
@@ -199,6 +204,9 @@ DeepSeek（纯文本）→ 现在它"看见"了
 思路与核心代码大量参考 [Anionex/codex-vision-proxy](https://github.com/Anionex/codex-vision-proxy)（MIT）——一个精炼的"图转文字"工具包。本仓库把它适配到 OpenCode Zen 的免费档，补上 Windows 的排雷，并打包成单文件自包含脚本。
 
 ## 更新日志
+
+### v1.2.0
+- 新增实时视力 `watch.py`：监控屏幕 / 视频 / 摄像头，本地像素差检测变化（零 API 调用），有变化才调视觉模型描述；防抖 + 冷却避免误报、重复报
 
 ### v1.1.0
 - 多源自动切换：主源 OpenCode Zen，备用源智谱（免费），可加 `VISION3_*`/`VISION4_*`… 扩展
