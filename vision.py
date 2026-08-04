@@ -264,7 +264,6 @@ def main():
     g = ap.add_mutually_exclusive_group()
     g.add_argument("-q", "--query", help="针对图片提问")
     g.add_argument("--ocr", nargs="?", const="", help="逐字转写图中文字")
-    ap.add_argument("--spatial", action="store_true", help="附加本地物体检测（YOLO bbox 像素坐标）")
     args = ap.parse_args()
     load_env()
     if args.images and args.images[0].startswith("/"):
@@ -290,20 +289,11 @@ def main():
         prompt = (
             "请详细描述这张图片的内容，并说明各元素的位置和空间关系。"
             "位置用九宫格方位描述（左上、上中、右上、左中、中央、右中、左下、下中、右下），"
-            "并尽量说明元素之间的相对位置（如'标题在页面顶部居中'、"
-            "'弹窗位于屏幕中央，按钮在弹窗右下角'、'人物在场景左侧，面向右侧'）。"
+            "并给出大致的画面占比和相对坐标（如'标题位于页面顶部居中，约占宽度 40%'、"
+            "'弹窗位于屏幕中央，约占画面 50%，按钮在弹窗右下角约 (80%, 85%) 处'、"
+            "'人物在场景左侧约 (10%, 30%) 处，面向右侧'）。"
         )
-    result = ask(urls, prompt)
-    if args.spatial and len(args.images) == 1:
-        try:
-            import spatial
-            from PIL import Image
-            img = Image.open(Path(args.images[0]).expanduser())
-            dets = spatial.detect(img)
-            result += "\n\n[空间检测] " + spatial.format_detections(dets)
-        except Exception as e:
-            result += f"\n\n[空间检测] 失败: {e}"
-    print(result)
+    print(ask(urls, prompt))
 
 
 if __name__ == "__main__":
