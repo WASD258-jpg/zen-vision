@@ -286,7 +286,12 @@ def main():
     elif len(urls) > 1:
         prompt = "Describe each image in detail (label them Image 1, Image 2, ...), then point out the notable differences between them."
     else:
-        prompt = "请详细描述这张图片的内容。"
+        prompt = (
+            "请详细描述这张图片的内容，并说明各元素的位置和空间关系。"
+            "位置用九宫格方位描述（左上、上中、右上、左中、中央、右中、左下、下中、右下），"
+            "并尽量说明元素之间的相对位置（如'标题在页面顶部居中'、"
+            "'弹窗位于屏幕中央，按钮在弹窗右下角'、'人物在场景左侧，面向右侧'）。"
+        )
     print(ask(urls, prompt))
 
 
