@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "vision": {
+      "command": "python",
+      "args": ["YOUR-PATH\\mcp_server.py"],
+      "env": { "CODEX_VISION_PROXY_ENV": "YOUR-PATH\\.env" }
+    }
+  }
+}
