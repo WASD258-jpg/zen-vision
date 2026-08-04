@@ -140,7 +140,10 @@ def main():
         sys.exit("需要 Python 3.11+，当前 " + sys.version.split()[0])
     print("OK: " + sys.version.split()[0])
     step("2/4 安装依赖")
-    pip_install("requests")
+    pip_install("requests")  # 核心（vision.py 唯一依赖）
+    pip_install("pillow")    # watch 屏幕监控（约 4MB，轻）
+    if ask("要支持视频/摄像头分析吗（需 opencv-python，约 90MB）？", default="n"):
+        pip_install("opencv-python")
     step("3/4 配置 .env")
     ensure_env()
     step("4/4 测试 + 可选 MCP")

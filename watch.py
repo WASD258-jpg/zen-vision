@@ -15,8 +15,7 @@ import io
 import sys
 import time
 
-import numpy as np
-from PIL import Image, ImageGrab
+from PIL import Image, ImageChops, ImageGrab
 
 import vision
 
@@ -24,9 +23,12 @@ DEFAULT_PROMPT = "描述这张画面上的内容：可见的文字、界面元�
 
 
 def mad(a, b, size=64):
+    """纯 PIL 计算平均绝对差（无 numpy），0-255 范围。"""
     a = a.convert("L").resize((size, size), Image.LANCZOS)
     b = b.convert("L").resize((size, size), Image.LANCZOS)
-    return float(np.mean(np.abs(np.asarray(a, dtype=int) - np.asarray(b, dtype=int))))
+    hist = ImageChops.difference(a, b).histogram()
+    total = sum(v * i for i, v in enumerate(hist))
+    return total / (size * size)
 
 
 def pil_to_data_url(img):
