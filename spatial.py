@@ -4,7 +4,6 @@
 用法（配合 vision.py --spatial）：描述 + 每个物体的像素坐标，
 纯文本模型可据此推算空间关系和精确位置。
 """
-import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
@@ -29,25 +28,45 @@ COCO_NAMES = [
 _net = None
 
 
+class ModelMissingError(FileNotFoundError):
+    pass
+
+
 def _load():
     global _net
     if _net is not None:
         return _net
     if not MODEL.exists():
-        sys.exit(f"检测模型缺失：需要 models/yolov5s.onnx（~14MB）")
+        raise ModelMissingError(f"检测模型缺失：需要 models/yolov5s.onnx（~14MB）")
     import cv2
     _net = cv2.dnn.readNetFromONNX(str(MODEL))
     return _net
 
 
+def letterbox(img, size=INPUT_SIZE):
+    """YOLOv5 风格 letterbox：等比缩放 + 居中灰边 pad，返回 (画布, scale, pad_x, pad_y)。"""
+    import cv2
+    import numpy as np
+    h, w = img.shape[:2]
+    scale = min(size / w, size / h)
+    nw, nh = int(round(w * scale)), int(round(h * scale))
+    resized = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_LINEAR)
+    canvas = np.full((size, size, 3), 114, dtype=np.uint8)
+    pad_x, pad_y = (size - nw) // 2, (size - nh) // 2
+    canvas[pad_y:pad_y + nh, pad_x:pad_x + nw] = resized
+    return canvas, scale, pad_x, pad_y
+
+
 def detect(image):
-    """image: PIL Image -> [(label, conf, x1, y1, x2, y2), ...]（像素坐标）"""
+    """image: PIL Image -> [(label, conf, x1, y1, x2, y2), ...]（原图像素坐标）"""
     import cv2
     import numpy as np
     net = _load()
     img = np.array(image.convert("RGB"))
     h, w = img.shape[:2]
-    blob = cv2.dnn.blobFromImage(img, 1 / 255.0, (INPUT_SIZE, INPUT_SIZE), (0, 0, 0), True, crop=False)
+    canvas, scale, pad_x, pad_y = letterbox(img)
+    blob = cv2.dnn.blobFromImage(canvas, 1 / 255.0, (INPUT_SIZE, INPUT_SIZE),
+                                 swapRB=False, crop=False)
     net.setInput(blob)
     outs = net.forward()  # (1, 25200, 85)
     pred = outs[0] if outs.ndim == 3 else outs
@@ -62,20 +81,26 @@ def detect(image):
     xywh = pred[mask][:, :4]
     ids = class_ids[mask]
     scs = scores[mask]
-    sx, sy = w / INPUT_SIZE, h / INPUT_SIZE  # 640 尺度 -> 原图像素
+
+    def to_img_x(v):
+        return (v - pad_x) / scale
+
+    def to_img_y(v):
+        return (v - pad_y) / scale
+
     boxes = []
     for cx, cy, bw, bh in xywh:
-        x1 = int((cx - bw / 2) * sx)
-        y1 = int((cy - bh / 2) * sy)
-        x2 = int((cx + bw / 2) * sx)
-        y2 = int((cy + bh / 2) * sy)
+        x1 = int(max(0, min(w, to_img_x(cx - bw / 2))))
+        y1 = int(max(0, min(h, to_img_y(cy - bh / 2))))
+        x2 = int(max(0, min(w, to_img_x(cx + bw / 2))))
+        y2 = int(max(0, min(h, to_img_y(cy + bh / 2))))
         boxes.append([x1, y1, x2 - x1, y2 - y1])
     idxs = cv2.dnn.NMSBoxes(boxes, scs.tolist(), CONF_THRESH, NMS_THRESH)
     result = []
     if idxs is not None and len(idxs) > 0:
-        for i in idxs.flatten():
-            x, y, bw, bh = boxes[i]
-            result.append((COCO_NAMES[int(ids[i])], round(float(scs[i]), 2), x, y, x + bw, y + bh))
+        for i in np.atleast_2d(idxs).flatten():
+            x, y, bw, bh = boxes[int(i)]
+            result.append((COCO_NAMES[int(ids[int(i)])], round(float(scs[int(i)]), 2), x, y, x + bw, y + bh))
     return result
 
 
