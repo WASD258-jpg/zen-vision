@@ -19,7 +19,7 @@ class TestSpatialPrompt(unittest.TestCase):
         # 直接在源码里确认空间提示词存在（避免模拟完整 CLI）
         src = (ROOT / "vision.py").read_text(encoding="utf-8")
         self.assertIn("九宫格", src)
-        self.assertIn("相对位置", src)
+        self.assertIn("相对坐标", src)
         self.assertIn("请详细描述这张图片的内容", src)
 
     def test_watch_prompt_has_spatial_terms(self):
@@ -58,38 +58,6 @@ class TestWatchMad(unittest.TestCase):
         self.assertGreater(watch.mad(a, c), 50.0)
 
 
-class TestSpatial(unittest.TestCase):
-    def test_detect_returns_list(self):
-        import spatial
-        from PIL import Image
-        img = Image.new("RGB", (320, 240), (180, 180, 180))
-        dets = spatial.detect(img)
-        self.assertIsInstance(dets, list)
-        for d in dets:
-            self.assertEqual(len(d), 6)
-
-    def test_format_detections(self):
-        import spatial
-        s = spatial.format_detections([("person", 0.9, 1, 2, 3, 4)])
-        self.assertIn("person(1,2,3,4)", s)
-        self.assertEqual(spatial.format_detections([]), "(未检测到物体)")
-
-    def test_letterbox_square(self):
-        import numpy as np
-        import spatial
-        canvas, scale, pad_x, pad_y = spatial.letterbox(np.zeros((512, 512, 3), dtype=np.uint8))
-        self.assertEqual(canvas.shape[:2], (640, 640))
-        self.assertAlmostEqual(scale, 1.25)
-        self.assertEqual((pad_x, pad_y), (0, 0))
-
-    def test_letterbox_wide(self):
-        import numpy as np
-        import spatial
-        canvas, scale, pad_x, pad_y = spatial.letterbox(np.zeros((1080, 1920, 3), dtype=np.uint8))
-        self.assertEqual(canvas.shape[:2], (640, 640))
-        self.assertAlmostEqual(scale, 640 / 1920, places=4)  # 0.3333
-        self.assertEqual(pad_x, 0)
-        self.assertGreater(pad_y, 0)  # 1080p -> 上下黑边
 
 
 if __name__ == "__main__":

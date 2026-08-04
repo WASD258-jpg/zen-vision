@@ -21,6 +21,3 @@ __pycache__/
 .vision_cache/
 
 /v1.2.1/
-
-# 可选检测模型（~14MB，需自行下载）
-/models/
