@@ -187,6 +187,16 @@ The image never reaches DeepSeek. A vision model describes it, and the descripti
 | `watch.py` | Live vision: monitor screen/video/camera, describe on change |
 | `photo/` | Screenshots used in this README |
 
+### Dependency options (control disk usage)
+
+| Feature | Dependency | Size | Required |
+|---|---|---|---|
+| `vision.py` (describe / Q&A / OCR) | `requests` | ~1 MB | Yes |
+| `watch.py` screen | `pillow` | ~4 MB | Recommended (installed by setup) |
+| `watch.py` video / camera | `opencv-python` | ~90 MB | **Optional** (skip if not needed) |
+
+`setup.py` asks before installing video/camera support; for plain image viewing + screen monitoring the local footprint is only ~5 MB vs ~100 MB for the full stack.
+
 FAQ:
 
 **Why `requests` and not `urllib`?** `urllib`'s TLS fingerprint gets flagged by Cloudflare in front of OpenCode Zen (403, error code 1010); `requests` passes.
