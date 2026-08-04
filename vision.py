@@ -298,9 +298,10 @@ def main():
         try:
             import spatial
             from PIL import Image
-            dets = spatial.detect(Image.open(args.images[0]))
+            img = Image.open(Path(args.images[0]).expanduser())
+            dets = spatial.detect(img)
             result += "\n\n[空间检测] " + spatial.format_detections(dets)
-        except BaseException as e:
+        except Exception as e:
             result += f"\n\n[空间检测] 失败: {e}"
     print(result)
 

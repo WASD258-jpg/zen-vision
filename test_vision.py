@@ -74,6 +74,23 @@ class TestSpatial(unittest.TestCase):
         self.assertIn("person(1,2,3,4)", s)
         self.assertEqual(spatial.format_detections([]), "(未检测到物体)")
 
+    def test_letterbox_square(self):
+        import numpy as np
+        import spatial
+        canvas, scale, pad_x, pad_y = spatial.letterbox(np.zeros((512, 512, 3), dtype=np.uint8))
+        self.assertEqual(canvas.shape[:2], (640, 640))
+        self.assertAlmostEqual(scale, 1.25)
+        self.assertEqual((pad_x, pad_y), (0, 0))
+
+    def test_letterbox_wide(self):
+        import numpy as np
+        import spatial
+        canvas, scale, pad_x, pad_y = spatial.letterbox(np.zeros((1080, 1920, 3), dtype=np.uint8))
+        self.assertEqual(canvas.shape[:2], (640, 640))
+        self.assertAlmostEqual(scale, 640 / 1920, places=4)  # 0.3333
+        self.assertEqual(pad_x, 0)
+        self.assertGreater(pad_y, 0)  # 1080p -> 上下黑边
+
 
 if __name__ == "__main__":
     unittest.main()
