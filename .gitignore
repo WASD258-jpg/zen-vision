@@ -20,3 +20,5 @@ test_*.py
 /v1.2.0/
 
 .vision_cache/
+
+/v1.3.0/
