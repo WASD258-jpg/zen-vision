@@ -215,11 +215,13 @@ DeepSeek（纯文本）→ 现在它"看见"了
 
 ## 更新日志
 
-### v1.3.0
+### v1.2.1
 - **磁盘缓存**：同图同问秒回（200MB 上限自动清理），`/cache` 指令 + MCP `cache_list` / `cache_clear` 可翻看历史描述
 - **watch 变化摘要**：触发时对比变化前后两帧，描述"从什么变成了什么"
-- **精简**：watch 去掉 numpy（纯 PIL），依赖分层安装（`opencv-python` 可选）
+- **精简**：watch 去掉 numpy（纯 PIL），依赖分层安装（`opencv-python` 可选，纯看图仅 ~5MB）
+- **MCP 完善**：新增 `cache_list` / `cache_clear` 工具；新增 `.mcp.json` 模板，Claude Desktop / Cursor 等客户端可一键导入
 - 新增 watch 实战演示图（CS 对局监控效果）
+- 下载按需分包：`zen-vision-scripts-min.zip`（精简）/ `zen-vision-scripts-full.zip`（完整含 watch）
 
 ### v1.2.0
 - 新增实时视力 `watch.py`：监控屏幕 / 视频 / 摄像头，本地像素差检测变化（零 API 调用），有变化才调视觉模型描述；防抖 + 冷却避免误报、重复报
